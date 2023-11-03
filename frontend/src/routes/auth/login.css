@@ -1,0 +1,11 @@
+.logo-title {
+    margin: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 15px;
+    font-size: 20pt;
+    color: #3080ff;
+    transition-timing-function:ease-in-out;
+}
