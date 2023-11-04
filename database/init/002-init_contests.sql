@@ -1,7 +1,7 @@
 CREATE TABLE contests (
     id SERIAL PRIMARY KEY,
-    contest_title VARCHAR(255),
-    contest_description TEXT,
+    title VARCHAR(255),
+    description TEXT,
     is_published BOOLEAN,
     group_id INT,
     contest_problems INT[],
@@ -10,8 +10,8 @@ CREATE TABLE contests (
 
 CREATE TABLE contest_problems (
     id SERIAL PRIMARY KEY,
-    contest_problem_description TEXT,
-    contest_problem_contents TEXT,
+    title TEXT,
+    contents TEXT,
     use_autograding BOOLEAN,
     use_autograding_answer TEXT,
     deadline TIMESTAMP
@@ -19,10 +19,10 @@ CREATE TABLE contest_problems (
 
 CREATE TABLE contest_problems_assignment (
     contest_id INT,
-    contest_problem_id INT,
-    PRIMARY KEY (contest_id, contest_problem_id),
+    problem_id INT,
+    PRIMARY KEY (contest_id, problem_id),
     FOREIGN KEY (contest_id) REFERENCES contests(id),
-    FOREIGN KEY (contest_problem_id) REFERENCES contest_problems(id)
+    FOREIGN KEY (problem_id) REFERENCES contest_problems(id)
 );
 
 CREATE TABLE contest_grading (

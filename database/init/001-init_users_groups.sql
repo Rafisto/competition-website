@@ -2,12 +2,12 @@ CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(255) UNIQUE,
     email VARCHAR(255) UNIQUE,
-    password_hash VARCHAR(255) -- sha256
+    password VARCHAR(255) -- sha256
 );
 
 CREATE TABLE groups (
     id SERIAL PRIMARY KEY,
-    group_name VARCHAR(255) UNIQUE
+    name VARCHAR(255) UNIQUE
 );
 
 CREATE TABLE user_group_relations (

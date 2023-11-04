@@ -7,7 +7,7 @@ services:
       - POSTGRES_DB=postgres
     volumes:
       - ./database/init:/docker-entrypoint-initdb.d/
-      # - ./database/data:/var/lib/postgresql/data -- no persist storage in dev
+      - ./database/data:/var/lib/postgresql/data
     ports:
       - 5432:5432
     restart: always
