@@ -6,7 +6,7 @@ Features:
 - User Authentication: Competitors can log in to the platform.
 - Contest Management: Admins can create, edit, and close contests.
 - Problem Statements: Each contest contains a set of problem statements that participants can access. Problem statements may include text descriptions, input/output examples, and constraints.
-- Submission Portal: Competitors can submit their solutions for specific problems within a contest. Submissions are automatically timestamped.
+- Submission Portal: Competitors can submit their solutions for specific problems within a contest. Submissions are automatically timestamped. **Solutions may require uploading files**
 - Judging System: Submissions are evaluated based on predefined criteria. Admins can review and assign scores to submissions.
 - Leaderboard: The platform maintains a real-time leaderboard that ranks participants based on their scores.
 - User Profiles: Competitors can view their submission history and stats.
