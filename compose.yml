@@ -11,6 +11,24 @@ services:
     ports:
       - 5432:5432
     restart: always
+
+  keycloak:
+    image: keycloak/keycloak:latest
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_DB_USERNAME=postgres
+      - KC_DB_PASSWORD=postgres
+    volumes:
+      - ./keycloak/keycloak.conf:/keycloak/keycloak.conf
+    ports:
+      - 2137:8080
+    depends_on:
+      - database
+    command:
+      ["--config-file=/keycloak/keycloak.conf", "start-dev"]
+    restart: on-failure
+
   frontend:
     build: 
       context: ./frontend
