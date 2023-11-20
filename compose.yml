@@ -1,6 +1,6 @@
 services:
   database:
-    image: postgres:latest
+    image: postgres:16-alpine
     environment:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_USER=postgres
@@ -8,9 +8,46 @@ services:
     volumes:
       - ./database/init:/docker-entrypoint-initdb.d/
       - ./database/data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "postgres"]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  keycloak-database:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=keycloak
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "keycloak"]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  keycloak:
+    image: keycloak/keycloak:22.0.5
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_DB_USERNAME=postgres
+      - KC_DB_PASSWORD=postgres
+      - KC_DB_URL_HOST=keycloak-database
+    volumes:
+      - ./keycloak/keycloak.conf:/keycloak/keycloak.conf
+      - ./keycloak/data:/opt/keycloak/data/import
     ports:
-      - 5432:5432
-    restart: always
+      - 2137:8080
+    depends_on:
+      - database-keycloak
+    command:
+      ["--config-file=/keycloak/keycloak.conf", "start-dev", "--import-realm"]
+    restart: on-failure
+
   frontend:
     build: 
       context: ./frontend
