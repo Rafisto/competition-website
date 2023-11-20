@@ -1,26 +1,13 @@
 import Header from "../../components/header";
-import LoginForm from "./login_form";
 import "./login.css";
-import { CSSProperties } from "react";
+import { LoginStructure } from "./login_structure";
+import { KeycloakForm } from "./forms/keycloak_form";
+import LoginForm from "./forms/login_form";
+import { Divider } from "@mui/material";
+import { BackgroundStyle, Background } from "../../css/background";
 
-const BackgroundStyle: CSSProperties = {
-    position: "absolute",
-    top: "0",
-    zIndex: "-1",
-    height: "100%",
-    width: "100%",
-};
-
-const Background: CSSProperties = {
-    position: "absolute",
-    top: "0",
-    backgroundImage: "url(wallpaper.jpg)",
-    backgroundSize: "cover",
-    backgroundPosition: "bottom",
-    filter: "blur(5px)",
-    height: "100%",
-    width: "100%",
-    zIndex: "-2",
+const LoginDivider = () => {
+    return <Divider sx={{ margin: "40px" }} />;
 };
 
 const Login = () => {
@@ -29,7 +16,14 @@ const Login = () => {
             <Header />
             <div style={BackgroundStyle}>
                 <div style={Background}></div>
-                <LoginForm />
+                <LoginStructure>
+                    <>
+                        <LoginDivider />
+                        <KeycloakForm />
+                        <LoginDivider />
+                        <LoginForm disabled />
+                    </>
+                </LoginStructure>
             </div>
         </>
     );
