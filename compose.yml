@@ -15,7 +15,7 @@ services:
       retries: 3
     restart: unless-stopped
 
-  keycloak-database:
+  database-keycloak:
     image: postgres:16-alpine
     environment:
       - POSTGRES_PASSWORD=postgres
@@ -36,7 +36,7 @@ services:
       - KEYCLOAK_ADMIN_PASSWORD=admin
       - KC_DB_USERNAME=postgres
       - KC_DB_PASSWORD=postgres
-      - KC_DB_URL_HOST=keycloak-database
+      - KC_DB_URL_HOST=database-keycloak
     volumes:
       - ./keycloak/keycloak.conf:/keycloak/keycloak.conf
       - ./keycloak/data:/opt/keycloak/data/import
