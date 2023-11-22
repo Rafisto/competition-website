@@ -1,6 +1,6 @@
-package org.contesthub.apiserver.repositories;
+package org.contesthub.apiserver.databaseInterface.repositories;
 
-import org.contesthub.apiserver.models.Group;
+import org.contesthub.apiserver.databaseInterface.models.Group;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 

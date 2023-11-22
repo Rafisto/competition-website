@@ -1,4 +1,4 @@
-package org.contesthub.apiserver.models;
+package org.contesthub.apiserver.databaseInterface.models;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
@@ -24,11 +24,21 @@ public class Contest {
     @Column(name = "is_published")
     private Boolean isPublished;
 
-    @ManyToMany(mappedBy = "contest")
+    @ManyToMany
+    @JoinTable(name = "contest_groups_relations",
+            joinColumns = @JoinColumn(name = "contest_id"),
+            inverseJoinColumns = @JoinColumn(name = "group_id"))
     private Set<Group> groups = new LinkedHashSet<>();
 
-    @OneToMany(mappedBy = "contest")
+    @OneToMany
+    @JoinColumn(name="contest_id")
     private Set<ContestProblem> contestProblems = new LinkedHashSet<>();
+
+    @ManyToMany
+    @JoinTable(name = "contest_user_relations",
+            joinColumns = @JoinColumn(name = "contest_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id"))
+    private Set<User> users = new LinkedHashSet<>();
 
     public Integer getId() {
         return id;
@@ -76,6 +86,14 @@ public class Contest {
 
     public void setContestProblems(Set<ContestProblem> contestProblems) {
         this.contestProblems = contestProblems;
+    }
+
+    public Set<User> getUsers() {
+        return users;
+    }
+
+    public void setUsers(Set<User> users) {
+        this.users = users;
     }
 
 }

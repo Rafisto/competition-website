@@ -1,7 +1,7 @@
-package org.contesthub.apiserver.repositories;
+package org.contesthub.apiserver.databaseInterface.repositories;
 
-import org.contesthub.apiserver.models.ContestGrading;
-import org.contesthub.apiserver.models.ContestGradingId;
+import org.contesthub.apiserver.databaseInterface.models.ContestGrading;
+import org.contesthub.apiserver.databaseInterface.models.ContestGradingId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 

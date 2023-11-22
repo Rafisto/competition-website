@@ -1,4 +1,4 @@
-package org.contesthub.apiserver.models;
+package org.contesthub.apiserver.databaseInterface.models;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
@@ -9,22 +9,22 @@ import java.io.Serializable;
 import java.util.Objects;
 
 @Embeddable
-public class ContestGroupsRelationId implements Serializable {
-    private static final long serialVersionUID = 7362501992295217751L;
+public class UserGroupRelationId implements Serializable {
+    private static final long serialVersionUID = 3248498270919357890L;
     @NotNull
-    @Column(name = "contest_id", nullable = false)
-    private Integer contestId;
+    @Column(name = "user_id", nullable = false)
+    private Integer userId;
 
     @NotNull
     @Column(name = "group_id", nullable = false)
     private Integer groupId;
 
-    public Integer getContestId() {
-        return contestId;
+    public Integer getUserId() {
+        return userId;
     }
 
-    public void setContestId(Integer contestId) {
-        this.contestId = contestId;
+    public void setUserId(Integer userId) {
+        this.userId = userId;
     }
 
     public Integer getGroupId() {
@@ -39,14 +39,14 @@ public class ContestGroupsRelationId implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
-        ContestGroupsRelationId entity = (ContestGroupsRelationId) o;
-        return Objects.equals(this.contestId, entity.contestId) &&
-                Objects.equals(this.groupId, entity.groupId);
+        UserGroupRelationId entity = (UserGroupRelationId) o;
+        return Objects.equals(this.groupId, entity.groupId) &&
+                Objects.equals(this.userId, entity.userId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(contestId, groupId);
+        return Objects.hash(groupId, userId);
     }
 
 }

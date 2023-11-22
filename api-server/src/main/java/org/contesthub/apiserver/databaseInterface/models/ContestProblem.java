@@ -1,4 +1,4 @@
-package org.contesthub.apiserver.models;
+package org.contesthub.apiserver.databaseInterface.models;
 
 import jakarta.persistence.*;
 
@@ -33,7 +33,8 @@ public class ContestProblem {
     @JoinColumn(name = "contest_id")
     private Contest contest;
 
-    @OneToMany(mappedBy = "contestProblem")
+    @OneToMany
+    @JoinColumn(name="problem_id")
     private Set<ContestGrading> contestGradings = new LinkedHashSet<>();
 
     public Integer getId() {

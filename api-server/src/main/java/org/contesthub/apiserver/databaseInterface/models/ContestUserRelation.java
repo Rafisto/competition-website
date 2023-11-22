@@ -1,28 +1,28 @@
-package org.contesthub.apiserver.models;
+package org.contesthub.apiserver.databaseInterface.models;
 
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "contest_groups_relations")
-public class ContestGroupsRelation {
+@Table(name = "contest_user_relations")
+public class ContestUserRelation {
     @EmbeddedId
-    private ContestGroupsRelationId id;
+    private ContestUserRelationId id;
 
     @MapsId("contestId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "contest_id", nullable = false)
     private Contest contest;
 
-    @MapsId("groupId")
+    @MapsId("userId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "group_id", nullable = false)
-    private Group group;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    public ContestGroupsRelationId getId() {
+    public ContestUserRelationId getId() {
         return id;
     }
 
-    public void setId(ContestGroupsRelationId id) {
+    public void setId(ContestUserRelationId id) {
         this.id = id;
     }
 
@@ -34,12 +34,12 @@ public class ContestGroupsRelation {
         this.contest = contest;
     }
 
-    public Group getGroup() {
-        return group;
+    public User getUser() {
+        return user;
     }
 
-    public void setGroup(Group group) {
-        this.group = group;
+    public void setUser(User user) {
+        this.user = user;
     }
 
 }
