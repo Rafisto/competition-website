@@ -8,6 +8,8 @@ services:
     volumes:
       - ./database/init:/docker-entrypoint-initdb.d/
       - ./database/data:/var/lib/postgresql/data
+    ports:
+      - 5433:5432
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres", "-d", "postgres"]
       interval: 5s
@@ -47,6 +49,12 @@ services:
     command:
       ["--config-file=/keycloak/keycloak.conf", "start-dev", "--import-realm"]
     restart: on-failure
+
+  # backend:
+  #   build: 
+  #     context: ./api-server
+  #   ports:
+  #     - 8081:8080
 
   frontend:
     build: 
