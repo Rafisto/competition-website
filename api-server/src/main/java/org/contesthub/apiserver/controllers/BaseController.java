@@ -1,6 +1,8 @@
 package org.contesthub.apiserver.controllers;
 
 import jakarta.servlet.http.HttpServletResponse;
+import org.contesthub.apiserver.databaseInterface.DTOs.LeaderboardDto;
+import org.contesthub.apiserver.databaseInterface.repositories.ContestGradingRepository;
 import org.contesthub.apiserver.models.response.UserInfoResponse;
 import org.contesthub.apiserver.services.UserDetailsImpl;
 import org.contesthub.apiserver.services.UserDetailsServiceImpl;
@@ -13,12 +15,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.security.Principal;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 public class BaseController {
     @Autowired
     private UserDetailsServiceImpl userDetailsService;
+
+    @Autowired
+    private ContestGradingRepository contestGradingRepository;
 
     @GetMapping("/")
     public ResponseEntity<?> index() {
@@ -48,6 +55,21 @@ public class BaseController {
             UserDetailsImpl user = userDetailsService.loadUserByUsername(username);
             return ResponseEntity.ok(new UserInfoResponse(user));
         }
+    }
+
+    @GetMapping({"/leaderboard", "/leaderboard/{contestId}"})
+    public ResponseEntity<?> getLeaderboard(@PathVariable(required = false) Integer contestId) {
+        Object[][] leaderboardMatrix;
+        if (contestId != null) {
+            leaderboardMatrix = contestGradingRepository.getLeaderboardByContestId(contestId);
+        } else {
+            leaderboardMatrix = contestGradingRepository.getLeaderboard();
+        }
+        Set<LeaderboardDto> leaderboard = new LinkedHashSet<>();
+        for(Object[] row : leaderboardMatrix) {
+           leaderboard.add(new LeaderboardDto((String) row[0], Math.toIntExact((Long) row[1])));
+        }
+        return ResponseEntity.ok(leaderboard);
     }
 
     @GetMapping("/admin/introspect")
