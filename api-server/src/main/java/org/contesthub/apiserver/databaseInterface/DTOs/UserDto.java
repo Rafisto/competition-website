@@ -19,9 +19,9 @@ public class UserDto implements Serializable {
     private String username;
     @Size(max = 255)
     private String email;
-    private Set<ContestGradingDto> contestGradings = new LinkedHashSet<>();
-    private Set<ContestDto> contests = new LinkedHashSet<>();
-    private Set<GroupDto> groups = new LinkedHashSet<>();
+    private Set<ContestGradingDto> contestGradings;
+    private Set<ContestDto> contests;
+    private Set<GroupDto> groups;
 
     public UserDto() {
     }

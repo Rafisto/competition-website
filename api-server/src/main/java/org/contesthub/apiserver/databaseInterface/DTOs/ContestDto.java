@@ -19,9 +19,9 @@ public class ContestDto implements Serializable {
     private String title;
     private String description;
     private Boolean isPublished;
-    private Set<GroupDto> groups = new LinkedHashSet<>();
-    private Set<ContestProblemDto> contestProblems = new LinkedHashSet<>();
-    private Set<UserDto> users = new LinkedHashSet<>();
+    private Set<GroupDto> groups;
+    private Set<ContestProblemDto> contestProblems;
+    private Set<UserDto> users;
 
     public ContestDto() {
     }

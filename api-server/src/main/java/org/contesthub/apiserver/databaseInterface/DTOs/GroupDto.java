@@ -1,6 +1,7 @@
 package org.contesthub.apiserver.databaseInterface.DTOs;
 
 import jakarta.validation.constraints.Size;
+import org.contesthub.apiserver.databaseInterface.models.Contest;
 import org.contesthub.apiserver.databaseInterface.models.Group;
 import org.contesthub.apiserver.databaseInterface.models.User;
 
@@ -15,8 +16,8 @@ public class GroupDto implements Serializable {
     private Integer id;
     @Size(max = 255)
     private String name;
-    private Set<ContestDto> contests = new LinkedHashSet<>();
-    private Set<UserDto> users = new LinkedHashSet<>();
+    private Set<ContestDto> contests;
+    private Set<UserDto> users;
 
     public GroupDto() {
     }
@@ -27,6 +28,10 @@ public class GroupDto implements Serializable {
         this.users = new LinkedHashSet<>();
         for(User user : group.getUsers()) {
             this.users.add(new UserDto(user.getId(), user.getUsername(), user.getEmail()));
+        }
+        this.contests = new LinkedHashSet<>();
+        for(Contest contest : group.getContests()) {
+            this.contests.add(new ContestDto(contest.getId(), contest.getTitle(), contest.getDescription(), contest.getIsPublished()));
         }
     }
 

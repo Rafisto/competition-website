@@ -19,7 +19,7 @@ public class ContestProblemDto implements Serializable {
     private String useAutogradingAnswer;
     private Instant deadline;
     private ContestDto contest;
-    private Set<ContestGradingDto> contestGradings = new LinkedHashSet<>();
+    private Set<ContestGradingDto> contestGradings;
 
     public ContestProblemDto() {
     }
