@@ -43,6 +43,8 @@ CREATE TABLE contest_problems (
 CREATE TABLE contest_grading (
     user_id INT,
     problem_id INT,
+    answer TEXT NOT NULL,
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     score INT,
     PRIMARY KEY (user_id, problem_id),
     FOREIGN KEY (user_id) REFERENCES users(id),

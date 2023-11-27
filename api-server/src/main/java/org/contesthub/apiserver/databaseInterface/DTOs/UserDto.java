@@ -103,4 +103,12 @@ public class UserDto implements Serializable {
         this.contests = contests;
         return this;
     }
+
+    public Set<GroupDto> getGroups() {
+        return groups;
+    }
+
+    public void setGroups(Set<GroupDto> groups) {
+        this.groups = groups;
+    }
 }

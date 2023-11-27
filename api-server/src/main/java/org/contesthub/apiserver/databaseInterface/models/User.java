@@ -33,9 +33,17 @@ public class User {
 
     @ManyToMany
     @JoinTable(name = "contest_groups_relations",
-            joinColumns = @JoinColumn(name = "user_id"),
+            joinColumns = @JoinColumn(name = "contest_id"),
             inverseJoinColumns = @JoinColumn(name = "group_id"))
     private Set<Group> groups = new LinkedHashSet<>();
+
+    public User() {
+    }
+
+    public User(String username, String email) {
+        this.username = username;
+        this.email = email;
+    }
 
     public Integer getId() {
         return id;

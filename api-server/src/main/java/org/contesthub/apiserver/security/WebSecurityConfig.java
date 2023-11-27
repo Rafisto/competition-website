@@ -25,15 +25,17 @@ public class WebSecurityConfig{
     @Bean
     public SecurityFilterChain securityFilterChain (HttpSecurity http) throws Exception{
         http.authorizeHttpRequests(requests -> requests
-                                    .requestMatchers("/", "/anonymous").permitAll()
+                                    .requestMatchers("/", "/anonymous", "/profile/**").permitAll()
                                     .requestMatchers("/admin/**").hasRole("ADMIN")
-                                    .requestMatchers("/user/**").hasRole("USER")
-        );
+                                    .requestMatchers("/actuator/**").hasRole("ADMIN")
+                                    .anyRequest().hasRole("USER")
+                                    );
         http.oauth2ResourceServer(oauth2 -> {
             oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter));
             oauth2.authenticationEntryPoint(unauthorizedHandler);
-        }
-        );
+            }
+            );
+//        http.addFilterAfter()
         http.exceptionHandling(exception -> exception.accessDeniedHandler(accessDeniedHandler));
         return http.build();
     }
