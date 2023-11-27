@@ -68,8 +68,25 @@ public class AdminController {
     }
 
     @PutMapping("contest/{contestId}/edit")
-    public ResponseEntity<?> editContest(@PathVariable Integer contestId) {
-        return ResponseEntity.ok().build();
+    public ResponseEntity<?> editContest(@PathVariable Integer contestId, ContestRequest request) {
+        Contest contest = contestRepository.findById(contestId).orElseThrow(() ->
+                new EntityNotFoundException("Could not find contest with id " + contestId));
+        if (request.getGroups() != null){
+            Set<Group> groupObjectSet = listGroupIdToGroup(request.getGroups());
+            contest.setGroups(groupObjectSet);
+        }
+        if (request.getTitle() != null){
+            contest.setTitle(request.getTitle());
+        }
+        if (request.getDescription() != null){
+            contest.setDescription(request.getDescription());
+        }
+        if (request.getPublished() != null){
+            contest.setIsPublished(request.getPublished());
+        }
+        contestRepository.saveAndFlush(contest);
+
+        return ResponseEntity.ok(new ContestDto(contest));
     }
 
     @PostMapping("contest/{contestId}/publish")

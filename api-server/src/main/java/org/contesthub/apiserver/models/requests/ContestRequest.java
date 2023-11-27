@@ -1,16 +1,16 @@
-package org.contesthub.apiserver.requests;
+package org.contesthub.apiserver.models.requests;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import org.hibernate.validator.constraints.Length;
 
-@Valid
-public class CreateContestRequest {
+/***
+ * Matches both the request for creation and update of a contest
+ * Update should not call validation on this object, as empty fields should not be overwritten
+ */
+public class ContestRequest {
     @NotBlank
     @Length(min=3)
-    private String name;
+    private String title;
 
     private String description;
 
@@ -18,12 +18,12 @@ public class CreateContestRequest {
 
     private Integer[] groups;
 
-    public String getName() {
-        return name;
+    public String getTitle() {
+        return title;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public String getDescription() {
@@ -54,6 +54,6 @@ public class CreateContestRequest {
         if (isPublished == null) {
             this.isPublished = Boolean.FALSE;
         }
-        return name != null && name.length() >= 3;
+        return title != null && title.length() >= 3;
     }
 }
