@@ -2,6 +2,9 @@ package org.contesthub.apiserver.databaseInterface.models;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
+import org.contesthub.apiserver.databaseInterface.repositories.GroupRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.endpoint.web.Link;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -39,6 +42,16 @@ public class Contest {
             joinColumns = @JoinColumn(name = "contest_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id"))
     private Set<User> users = new LinkedHashSet<>();
+
+    public Contest(String title, String description, Boolean isPublished, Set<Group> groups){
+        this.title = title;
+        this.description = description;
+        this.isPublished = isPublished;
+        this.groups = groups;
+    }
+
+    public Contest() {
+    }
 
     public Integer getId() {
         return id;
