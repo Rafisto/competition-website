@@ -33,6 +33,18 @@ public class ContestProblem {
     @JoinColumn(name = "contest_id")
     private Contest contest;
 
+    public ContestProblem() {
+    }
+
+    public ContestProblem(String title, String contents, Boolean useAutograding, String useAutogradingAnswer, Instant deadline, Contest contest) {
+        this.title = title;
+        this.contents = contents;
+        this.useAutograding = useAutograding;
+        this.useAutogradingAnswer = useAutogradingAnswer;
+        this.deadline = deadline;
+        this.contest = contest;
+    }
+
     @OneToMany
     @JoinColumn(name="problem_id")
     private Set<ContestGrading> contestGradings = new LinkedHashSet<>();
