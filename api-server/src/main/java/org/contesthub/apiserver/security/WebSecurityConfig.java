@@ -36,7 +36,9 @@ public class WebSecurityConfig{
             }
             );
 //        http.addFilterAfter()
-        http.exceptionHandling(exception -> exception.accessDeniedHandler(accessDeniedHandler));
+        http.exceptionHandling(exception -> {
+            exception.accessDeniedHandler(accessDeniedHandler);
+        });
         return http.build();
     }
 }
