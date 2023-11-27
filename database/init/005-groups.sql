@@ -1,0 +1,10 @@
+insert into groups (name) values ('Bison bison');
+insert into groups (name) values ('Scolopax minor');
+insert into groups (name) values ('Neophoca cinerea');
+insert into groups (name) values ('Pitangus sulphuratus');
+insert into groups (name) values ('Canis mesomelas');
+insert into groups (name) values ('Scolopax major');
+insert into groups (name) values ('Deroptyus accipitrinus');
+insert into groups (name) values ('Felis caracal');
+insert into groups (name) values ('Trachyphonus vaillantii');
+insert into groups (name) values ('Tamandua tetradactyla');

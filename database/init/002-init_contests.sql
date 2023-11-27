@@ -2,10 +2,23 @@ CREATE TABLE contests (
     id SERIAL PRIMARY KEY,
     title VARCHAR(255),
     description TEXT,
-    is_published BOOLEAN,
+    is_published BOOLEAN
+);
+
+CREATE TABLE contest_groups_relations (
+    contest_id INT,
     group_id INT,
-    contest_problems INT[],
+    PRIMARY KEY (contest_id, group_id),
+    FOREIGN KEY (contest_id) REFERENCES contests(id),
     FOREIGN KEY (group_id) REFERENCES groups(id)
+);
+
+CREATE TABLE contest_user_relations (
+    contest_id INT,
+    user_id INT,
+    PRIMARY KEY (contest_id, user_id),
+    FOREIGN KEY (contest_id) REFERENCES contests(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE TABLE contest_problems (
@@ -14,20 +27,24 @@ CREATE TABLE contest_problems (
     contents TEXT,
     use_autograding BOOLEAN,
     use_autograding_answer TEXT,
-    deadline TIMESTAMP
+    deadline TIMESTAMP,
+    contest_id INT,
+    FOREIGN KEY (contest_id) REFERENCES contests(id)
 );
 
-CREATE TABLE contest_problems_assignment (
-    contest_id INT,
-    problem_id INT,
-    PRIMARY KEY (contest_id, problem_id),
-    FOREIGN KEY (contest_id) REFERENCES contests(id),
-    FOREIGN KEY (problem_id) REFERENCES contest_problems(id)
-);
+-- CREATE TABLE contest_problems_relations (
+--     contest_id INT,
+--     problem_id INT,
+--     PRIMARY KEY (contest_id, problem_id),
+--     FOREIGN KEY (contest_id) REFERENCES contests(id),
+--     FOREIGN KEY (problem_id) REFERENCES contest_problems(id)
+-- );
 
 CREATE TABLE contest_grading (
     user_id INT,
     problem_id INT,
+    answer TEXT NOT NULL,
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     score INT,
     PRIMARY KEY (user_id, problem_id),
     FOREIGN KEY (user_id) REFERENCES users(id),
