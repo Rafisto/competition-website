@@ -25,7 +25,7 @@ public class WebSecurityConfig{
     @Bean
     public SecurityFilterChain securityFilterChain (HttpSecurity http) throws Exception{
         http.authorizeHttpRequests(requests -> requests
-                                    .requestMatchers("/", "/anonymous", "/profile/**").permitAll()
+                                    .requestMatchers("/", "/anonymous", "/profile/**", "/v3/**", "/swagger-ui.html", "/swagger-ui*/**", "/error").permitAll()
                                     .requestMatchers("/admin/**").hasRole("ADMIN")
                                     .requestMatchers("/actuator/**").hasRole("ADMIN")
                                     .anyRequest().hasRole("USER")
