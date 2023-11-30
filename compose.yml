@@ -50,11 +50,35 @@ services:
       ["--config-file=/keycloak/keycloak.conf", "start-dev", "--import-realm"]
     restart: on-failure
 
-  # backend:
-  #   build: 
-  #     context: ./api-server
-  #   ports:
-  #     - 8081:8080
+  backend:
+    build: 
+      context: ./api-server
+    ports:
+      - 8081:8080
+    volumes:
+      - type: bind
+        source: ./docs
+        target: /app/docs
+    healthcheck:
+      test: ["CMD-SHELL", "curl", "-f", "http://localhost:8080/v3/api-docs", ">", "/app/api-docs.json"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+  
+  docs:
+    build:
+      context: ./docs
+    ports:
+     - 4567:4567
+    environment:
+      - WEB_SERVER_ADDRESS=backend:8080
+    volumes:
+      - type: bind
+        source: ./docs/build
+        target: /srv/slate/build
+    depends_on:
+     - backend
 
   frontend:
     build: 
