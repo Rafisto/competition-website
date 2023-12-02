@@ -74,9 +74,7 @@ services:
     environment:
       - WEB_SERVER_ADDRESS=backend:8080
     volumes:
-      - type: bind
-        source: ./docs/build
-        target: /srv/slate/build
+      - ./docs/build:/srv/slate/build
     depends_on:
      - backend
 

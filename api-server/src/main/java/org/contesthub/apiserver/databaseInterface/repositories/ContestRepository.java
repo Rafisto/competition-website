@@ -2,6 +2,7 @@ package org.contesthub.apiserver.databaseInterface.repositories;
 
 import org.contesthub.apiserver.databaseInterface.models.Contest;
 import org.contesthub.apiserver.databaseInterface.models.Group;
+import org.contesthub.apiserver.databaseInterface.models.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -22,12 +23,16 @@ public interface ContestRepository extends JpaRepository<Contest, Integer>, JpaS
 
     List<Contest> findByIsPublishedTrue();
     List<Contest> findByIsPublishedFalse();
+    List<Contest> findByUsersContainsAndIsPublishedTrue(User user);
+    List<Contest> findByGroupsContainsAndIsPublishedTrue(Group group);
 
+    // TODO: check all functions for need of user filter
     Optional<Contest> findById(Integer id);
+    Optional<Contest> findByIdAndUsersContainsAndIsPublishedTrue(Integer id, User user);
     Contest findByTitle(String title);
 
     // Problems that are children of the contest are still there, with the contest_id field set to null
-    void deleteById(Integer contestId);
+    void deleteById(Integer id);
 
 //    TODO: insert contest into table
 //    Contest

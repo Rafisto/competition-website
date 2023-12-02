@@ -1,0 +1,42 @@
+# Sitemap
+- [x] User Authentication: Competitors can log in to the platform.
+    - [x] Keycloak implementation
+    - [x] Admin can introspect JWT token (/admin/introspect)
+- [x] Contest Management: Admins can create, edit, and close contests.
+    - [x] Admins can create contests (/admin/contests/create)
+    - [x] Admins can edit contests (/admin/contests/{contestId}/edit)
+    - [x] Admins can view all contests (/admin/contests/list)
+    - [x] Admins can view a specific contest (/admin/contests/{contestId})
+    - [x] Admins can delete a contest (/admin/contests/{contestId}/delete)
+    - [x] Admins can make a contest public or private (/admin/contests/{contestId}/publish)
+    - [x] Users can view all contests available to them (any of their groups) (/contests/list)
+    - [x] Users can join a contest (available to any of their groups) (/contests/{contestId}/join) 
+    - [x] Users can view all contests they are participating in (/contests/joined)
+- [x] Problem Statements: Each contest contains a set of problem statements that participants can access. Problem statements may include text descriptions, input/output examples, and constraints.
+    - [x] Admins can create problem statements (/admin/contests/{contestId}/problems/create)
+    - [x] Admins can edit problem statements (/admin/problems/{problemId}/edit)
+    - [x] Admins can delete problem statements (/admin/problems/{problemId}/delete)
+    - [x] Admins can view all problem statements for each contest (contest/{contestId}/problems)
+    - [x] Admins can view a specific problem statement (/admin/problems/{problemId})
+    - [x] Admins can edit problem statements (/admin/problems/{problemId}/edit)
+- [ ] Submission Portal: Competitors can submit their solutions for specific problems within a contest. Submissions are automatically timestamped. **Solutions may require uploading files**
+    - [ ] Users can view problem statements in a contest (participating) (/contests/{contestId}/problems)
+    - [ ] Users can submit solutions to problems in a contest (participating) (/problems/{problemId}/submit)
+    - [ ] Users can edit their submissions (/submissions/{submissionId}/edit)
+- [ ] Judging System: Submissions are evaluated based on predefined criteria. Admins can review and assign scores to submissions.
+    - [ ] Admins can view all submissions for a problem statement (/admin/problems/{problemId}/submissions)
+    - [ ] Admins can view a specific submission (/admin/submissions/{submissionId})
+    - [ ] Admins can assign a score to a submission (/admin/submissions/{submissionId}/score)
+- [x] Leaderboard: The platform maintains a real-time leaderboard that ranks participants based on their scores.
+    - [x] Leaderboard is updated in real-time
+    - [x] Leaderboard is sorted by score
+    - [x] There is a leaderboard for each contest (visible only to participants) ("/contest/{contestId}/leaderboard")
+    - [x] There is a global leaderboard (visible to everyone) ("/leaderboard")
+- [ ] User Profiles: Competitors can view their submission history and stats.
+    - [x] Users can view their profile (/profile)
+    - [x] Users can view other users' profiles (/users/{username})
+    - [ ] Users can view their submission history for a contest (participating) (/contests/{contestId}/submissions/history)
+    - [ ] Users can view their overall submission history (all contests) (/submissions/history)
+    - [ ] Users can view all their active submissions (participating) (/submissions)
+    - [ ] Users can view a specific submission (with a score) (/submissions/{submissionId})
+    - [ ] Users can view their score for a contest (/contests/{contestId}/score)

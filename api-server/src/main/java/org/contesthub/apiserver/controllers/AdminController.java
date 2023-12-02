@@ -87,8 +87,8 @@ public class AdminController {
     }
 
     @PostMapping("contest/{contestId}/publish")
-    public ResponseEntity<?> publishContest(@PathVariable Integer contestId) {
-        contestRepository.updateIsPublishedById(true, contestId);
+    public ResponseEntity<?> publishContest(@PathVariable Integer contestId, @RequestParam(defaultValue = "true") Boolean publish) {
+        contestRepository.updateIsPublishedById(publish, contestId);
         ContestDto contest = new ContestDto(contestRepository.findById(contestId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find contest with id " + contestId)));
         return ResponseEntity.ok(contest);
@@ -126,7 +126,7 @@ public class AdminController {
         return ResponseEntity.ok(contestProblems);
     }
 
-    @PostMapping(value = "contest/{contestId}/problems/add", consumes = MediaType.ALL_VALUE)
+    @PostMapping(value = "contest/{contestId}/problems/create", consumes = MediaType.ALL_VALUE)
     public ResponseEntity<?> addContestProblem(@PathVariable Integer contestId, @Valid ContestProblemRequest request) {
         Contest contest = contestRepository.findById(contestId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find contest with id " + contestId));
@@ -143,14 +143,14 @@ public class AdminController {
         return ResponseEntity.ok(contestProblem);
     }
 
-    @GetMapping(value = "problem/{problemId}", consumes = MediaType.ALL_VALUE)
+    @GetMapping(value = "problems/{problemId}", consumes = MediaType.ALL_VALUE)
     public ResponseEntity<?> getProblemDetails(@PathVariable Integer problemId) {
         ContestProblemDto contestProblem = new ContestProblemDto(contestProblemRepository.findById(problemId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find contest problem with id " + problemId)));
         return ResponseEntity.ok(contestProblem);
     }
 
-    @PutMapping(value = "problem/{problemId}/edit")
+    @PutMapping(value = "problems/{problemId}/edit")
     public ResponseEntity<?> editContestProblem(@PathVariable Integer problemId, ContestProblemRequest request){
         ContestProblem contestProblem = contestProblemRepository.findById(problemId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find contest problem with id " + problemId));
@@ -192,6 +192,14 @@ public class AdminController {
         }
         contestProblemRepository.saveAndFlush(contestProblem);
 
+        return ResponseEntity.ok(contestProblem);
+    }
+
+    @DeleteMapping(value = "problems/{problemId}", consumes = MediaType.ALL_VALUE)
+    public ResponseEntity<?> deleteProblem(@PathVariable Integer problemId) {
+        ContestProblemDto contestProblem = new ContestProblemDto(contestProblemRepository.findById(problemId).orElseThrow(() ->
+                new EntityNotFoundException("Could not find contest problem with id " + problemId)));
+        contestProblemRepository.deleteById(problemId);
         return ResponseEntity.ok(contestProblem);
     }
 }

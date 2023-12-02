@@ -1,6 +1,7 @@
 #!/bin/bash
 # This part is used to fetch data from backend and build it into slate compatible md
-curl --max-time 5\
+echo "Fetching data from backend " $WEB_SERVER_ADDRESS
+curl --max-time 5 \
      --retry 5 \
      --retry-delay 10 \
      --retry-connrefused \
