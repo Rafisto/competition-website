@@ -1,5 +1,11 @@
 package org.contesthub.apiserver.controllers;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.persistence.EntityNotFoundException;
 import org.apache.coyote.Response;
 import org.contesthub.apiserver.databaseInterface.DTOs.ContestDto;
@@ -53,8 +59,15 @@ public class ContestController {
      * @param principal The user's JWT token
      * @param joined Whether to list contests the user has joined or not (default: true)
      */
-    @GetMapping("/list")
-    public ResponseEntity<?> getContests(Principal principal, @RequestParam(defaultValue = "true") Boolean joined) {
+    @Operation(summary = "Get contests", description = "Get contests in which the user can participate")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "All contests available to user", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
+            })
+    })
+    @GetMapping("list")
+    public ResponseEntity<?> getContests(Principal principal,
+                                         @Parameter(description = "Whether to list contests the user has joined or not") @RequestParam(defaultValue = "true") Boolean joined) {
         JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
         UserDetailsImpl user = userDetailsService.loadUserByToken(token);
         List<Contest> contests = contestService.loadContestsUserCanJoin(user);
@@ -66,7 +79,13 @@ public class ContestController {
      * This endpoint lists contest in which the user is participating
      * @param principal The user's JWT token
      */
-    @GetMapping("/list/joined")
+    @Operation(summary = "Get joined contests")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "All contests in which user participates", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
+            })
+    })
+    @GetMapping("list/joined")
     public ResponseEntity<?> getUserContestList(Principal principal) {
         JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
         UserDetails user = userDetailsService.loadUserByToken(token);
@@ -78,8 +97,15 @@ public class ContestController {
      * This endpoint lists the leaderboard of a contest
      * @param principal The user's JWT token
      */
-    @GetMapping("/{contestId}/leaderboard")
-    public ResponseEntity<?> getContestLeaderboard(Principal principal, @PathVariable Integer contestId) {
+    @Operation(summary = "Get contest leaderboard")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Leaderboard ordered by score", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = LeaderboardDto.class))
+            })
+    })
+    @GetMapping("{contestId}/leaderboard")
+    public ResponseEntity<?> getContestLeaderboard(Principal principal,
+                                                   @Parameter(description = "Id of a contest for which the leaderboard will be returned") @PathVariable Integer contestId) {
         JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
         UserDetails user = userDetailsService.loadUserByToken(token);
         // TODO custom body indicating that the user might not be participant of the contest
@@ -100,8 +126,15 @@ public class ContestController {
      * @param principal The user's JWT token
      * @return Contest object with updated user list
      */
-    @PostMapping("/{contestId}/join")
-    public ResponseEntity<?> joinContest(Principal principal, @PathVariable Integer contestId) {
+    @Operation(summary = "Join a contest")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Contest object with updated user list", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
+            })
+    })
+    @PostMapping("{contestId}/join")
+    public ResponseEntity<?> joinContest(Principal principal,
+                                         @Parameter(description = "Id of a contest you want to join") @PathVariable Integer contestId) {
         JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
         UserDetailsImpl user = userDetailsService.loadUserByToken(token);
         // TODO custom body indicating that the user might not be participant of the contest

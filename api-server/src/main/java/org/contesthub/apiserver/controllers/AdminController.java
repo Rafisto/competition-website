@@ -1,5 +1,11 @@
 package org.contesthub.apiserver.controllers;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -35,6 +41,7 @@ public class AdminController {
     @Autowired
     ContestProblemRepository contestProblemRepository;
 
+    // TODO: Possibly move this to a service
     public Set<Group> listGroupIdToGroup(Integer[] groupIds) {
         Set<Group> groupObjectSet = new LinkedHashSet<>();
         for(Integer group : groupIds) {
@@ -45,15 +52,28 @@ public class AdminController {
         return groupObjectSet;
     }
 
+    /***
+     * This endpoint lets the admin create a new contest
+     * @param request Matches the ContestRequest object representing the contest to be created. This will be fully validated.
+     * @return The newly created contest object
+     */
+    @Operation(summary="Create a new contest")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode="200", description="The newly created contest object", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
+                    }),
+            @ApiResponse(responseCode="400", description="Indicates invalid contest object", content ={@Content()})
+    })
     @PostMapping(value = "contest/create", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseEntity<?> createNewContest(@Valid ContestRequest request) {
+    public ResponseEntity<?> createNewContest(@Parameter(description = "Matches the ContestRequest object representing the contest to be created. This will be fully validated.", required = true) @Valid ContestRequest request) {
         if (!request.isValid()) {
             final Map<String, Object> body = new HashMap<>();
             body.put("status", HttpServletResponse.SC_BAD_REQUEST);
             body.put("error", "Bad Request");
             body.put("message", "Not a valid contest object");
             body.put("path", "/admin/contest/create");
-            ResponseEntity.badRequest().body(body);
+            return ResponseEntity.badRequest().body(body);
         };
 
         Set<Group> groupObjectSet = listGroupIdToGroup(request.getGroups());
@@ -64,8 +84,27 @@ public class AdminController {
         return ResponseEntity.ok(newContest);
     }
 
+    /***
+     * This endpoint lets the admin edit an already existing contest.
+     * @param contestId Id of the contest to be edited. Must be already existing.
+     * @param request Matches the ContestRequest object representing the contest to be edited. At least one of the fields must be provided.
+     *                Can contain any of the fields in the ContestRequest object, none of them is required.
+     *                This means that it won't be fully validated, each field will be validated individually instead.
+     * @return The edited contest object
+     */
+    @Operation(summary="Edit an existing contest")
+    @ApiResponse(responseCode="200", description="The edited contest object", content =
+            {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
+            })
     @PutMapping("contest/{contestId}/edit")
-    public ResponseEntity<?> editContest(@PathVariable Integer contestId, ContestRequest request) {
+    public ResponseEntity<?> editContest(@Parameter(description = "Id of the contest to be edited") @PathVariable Integer contestId,
+                                         @Parameter(description = """
+                                                     Matches the ContestRequest object representing the contest to be edited. At least one of the fields must be provided.
+                                                     Can contain any of the fields in the ContestRequest object, none of them is required.
+                                                     This means that it won't be fully validated, each field will be validated individually instead.
+                                                     """) ContestRequest request) {
+        // TODO: custom body indicating that the contest might not exist
         Contest contest = contestRepository.findById(contestId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find contest with id " + contestId));
         if (request.getGroups() != null){
@@ -86,24 +125,61 @@ public class AdminController {
         return ResponseEntity.ok(new ContestDto(contest));
     }
 
+    /***
+     * This endpoint is a shorthand toggle for publishing/unpublishing a contest
+     * @param contestId Id of the contest to be published/unpublished
+     * @param publish Set to false if the contest is to be unpublished, in other cases this can be omitted.
+     * @return The edited contest object
+     */
+    @Operation(summary="Publish/unpublish a contest")
+    @ApiResponse(responseCode="200", description="The edited contest object", content =
+            {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
+            })
     @PostMapping("contest/{contestId}/publish")
-    public ResponseEntity<?> publishContest(@PathVariable Integer contestId, @RequestParam(defaultValue = "true") Boolean publish) {
+    public ResponseEntity<?> publishContest(@Parameter(description = "Id of the contest to be updated") @PathVariable Integer contestId,
+                                            @Parameter(description = "Set to false to make contest private") @RequestParam(defaultValue = "true") Boolean publish) {
         contestRepository.updateIsPublishedById(publish, contestId);
+        // TODO: custom body indicating that the contest might not exist
         ContestDto contest = new ContestDto(contestRepository.findById(contestId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find contest with id " + contestId)));
         return ResponseEntity.ok(contest);
     }
 
+    /***
+     * This endpoint lets the admin delete a contest. This removes the contest permanently from the database.
+     * @param contestId Id of the contest to be deleted. Must be already existing.
+     * @return The deleted contest object
+     */
+    @Operation(summary="Delete a contest. This removes the contest permanently from the database.")
+    @ApiResponse(responseCode="200", description="The deleted contest object", content =
+            {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
+            })
     @DeleteMapping(value = "contest/{contestId}", consumes = MediaType.ALL_VALUE)
-    public ResponseEntity<?> deleteContest(@PathVariable Integer contestId){
+    public ResponseEntity<?> deleteContest(@Parameter(description = "Id of the contest to be deleted")
+                                           @PathVariable Integer contestId){
+        // TODO: custom body indicating that the contest might not exist
         ContestDto contest = new ContestDto(contestRepository.findById(contestId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find contest with id " + contestId)));
         contestRepository.deleteById(contestId);
         return ResponseEntity.ok(contest);
     }
 
+    /***
+     * This endpoint lets the admin list all contests in the database.
+     * @param isPublished Filter by published/unpublished contests. Can be true or false.
+     *                    If not provided, all contests are returned.
+     * @return List of contests matching the query
+     */
+    @Operation(summary="List all contests in the database")
+    @ApiResponse(responseCode="200", description="List of contests matching the query", content =
+            {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
+            })
     @GetMapping(value = "contest/list", consumes = MediaType.ALL_VALUE)
-    public ResponseEntity<?> getContestList(@RequestParam(required = false) Boolean isPublished) {
+    public ResponseEntity<?> getContestList(@Parameter(description = "Filter by published/unpublished contents. If not provided all contests are returned")
+                                            @RequestParam(required = false) Boolean isPublished) {
         if (isPublished == null) {
             return ResponseEntity.ok(contestRepository.getAll().stream().map(ContestDto::new).collect(Collectors.toList()));
         } else if (isPublished == Boolean.TRUE) {
@@ -115,8 +191,21 @@ public class AdminController {
         return ResponseEntity.ok(contestList);
     }
 
+    /***
+     * This endpoint lets the admin list all problems in a contest.
+     * @param contestId Id of the contest whose problems are to be listed. Must be already existing.
+     * @return List of problems in the contest
+     */
+    @Operation(summary="List all problem statements in a contest")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode="200", description="List of problems in the contest", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = ContestProblemDto.class))
+                    }),
+            @ApiResponse(responseCode="400", description="Indicates that no problems exist within given contest", content ={@Content()})
+    })
     @GetMapping(value = {"contest/{contestId}/problems"}, consumes = MediaType.ALL_VALUE)
-    public ResponseEntity<?> getContestProblemList(@PathVariable Integer contestId) {
+    public ResponseEntity<?> getContestProblemList(@Parameter(description = "Id of the contest whose problems are to be listed") @PathVariable Integer contestId) {
         List<ContestProblemDto> contestProblems = contestProblemRepository.findAllByContestId(contestId).stream().map(ContestProblemDto::new).toList();
         if (contestProblems.isEmpty()) {
             // Maybe check for contest existence first?
@@ -126,8 +215,23 @@ public class AdminController {
         return ResponseEntity.ok(contestProblems);
     }
 
-    @PostMapping(value = "contest/{contestId}/problems/create", consumes = MediaType.ALL_VALUE)
-    public ResponseEntity<?> addContestProblem(@PathVariable Integer contestId, @Valid ContestProblemRequest request) {
+    /***
+     * This endpoint lets the admin create a new problem statement.
+     * @param contestId Id of the contest to in which problem statement will be created. Must be already existing.
+     * @param request Matches the ContestProblemRequest object representing the contest problem to be created.
+     * @return The edited contest object
+     */
+    @Operation(summary="Add a problem statement to a contest")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode="200", description="The newly created contest problem object", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = ContestProblemDto.class))
+                    }),
+            @ApiResponse(responseCode="400", description="Indicates invalid contest problem object", content ={@Content()})
+    })
+    @PostMapping(value = "contest/{contestId}/problems/create")
+    public ResponseEntity<?> addContestProblem(@Parameter(description = "Id of the contest in which problem will be added") @PathVariable Integer contestId,
+                                               @Parameter(description = "Represents problem statement that will be created") @Valid ContestProblemRequest request) {
         Contest contest = contestRepository.findById(contestId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find contest with id " + contestId));
         if (!request.isValid()) {
@@ -143,15 +247,52 @@ public class AdminController {
         return ResponseEntity.ok(contestProblem);
     }
 
+    /***
+     * This endpoint lets the admin get details of a problem statement.
+     * @param problemId Id of the problem statement to be fetched. Must be already existing.
+     * @return Requested problem statement object
+     */
+    @Operation(summary="Get details of a problem statement")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode="200", description="The requested contest problem object", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = ContestProblemDto.class))
+                    }),
+//            @ApiResponse(responseCode="400", description="Indicates that the problem statement does not exist", content ={@Content()})
+    })
     @GetMapping(value = "problems/{problemId}", consumes = MediaType.ALL_VALUE)
-    public ResponseEntity<?> getProblemDetails(@PathVariable Integer problemId) {
+    public ResponseEntity<?> getProblemDetails(@Parameter(description = "Id of the problem statement to be fetched") @PathVariable Integer problemId) {
+        // TODO: custom body indicating that the problem statement might not exist
         ContestProblemDto contestProblem = new ContestProblemDto(contestProblemRepository.findById(problemId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find contest problem with id " + problemId)));
         return ResponseEntity.ok(contestProblem);
     }
 
+    /***
+     * This endpoint lets the admin edit an already existing problem statement.
+     * @param problemId Id of the problem to be edited. Must be already existing.
+     * @param request Matches the ContestProblemRequest object representing the contest to be edited. At least one of the fields must be provided.
+     *                Can contain any of the fields in the ContestProblemRequest object, none of them is required.
+     *                This means that it won't be fully validated, each field will be validated individually instead.
+     * @return The edited contest object
+     */
+    @Operation(summary="Edit an existing problem statement")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode="200", description="The edited contest problem object", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = ContestProblemDto.class))
+                    }),
+            @ApiResponse(responseCode="400", description="Indicates invalid contest problem object", content ={@Content()}),
+//            @ApiResponse(responseCode="400", description="Indicates that the problem statement does not exist", content ={@Content()})
+    })
     @PutMapping(value = "problems/{problemId}/edit")
-    public ResponseEntity<?> editContestProblem(@PathVariable Integer problemId, ContestProblemRequest request){
+    public ResponseEntity<?> editContestProblem(@Parameter(description = "Id of a problem statement to be edited") @PathVariable Integer problemId,
+                                                @Parameter(description = """
+                                                            Matches the ContestProblemRequest object representing the contest to be edited. At least one of the fields must be provided.
+                                                            Can contain any of the fields in the ContestProblemRequest object, none of them is required.
+                                                            This means that it won't be fully validated, each field will be validated individually instead.
+                                                            """) ContestProblemRequest request){
+        // TODO: custom body indicating that the problem statement might not exist
         ContestProblem contestProblem = contestProblemRepository.findById(problemId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find contest problem with id " + problemId));
         if (request.getTitle() != null) {
@@ -195,8 +336,18 @@ public class AdminController {
         return ResponseEntity.ok(contestProblem);
     }
 
+    /***
+     * This endpoint lets the admin delete a problem statement. This removes the problem statement permanently from the database.
+     * @param problemId Id of the problem statement to be deleted. Must be already existing.
+     * @return The deleted problem statement object
+     */
+    @Operation(summary="Delete a problem statement. This removes the problem statement permanently from the database.")
+    @ApiResponse(responseCode="200", description="The deleted contest problem object", content =
+            {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = ContestProblemDto.class))
+            })
     @DeleteMapping(value = "problems/{problemId}", consumes = MediaType.ALL_VALUE)
-    public ResponseEntity<?> deleteProblem(@PathVariable Integer problemId) {
+    public ResponseEntity<?> deleteProblem(@Parameter(description = "Id of a problem statement to be deleted") @PathVariable Integer problemId) {
         ContestProblemDto contestProblem = new ContestProblemDto(contestProblemRepository.findById(problemId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find contest problem with id " + problemId)));
         contestProblemRepository.deleteById(problemId);

@@ -1,5 +1,11 @@
 package org.contesthub.apiserver.controllers;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.servlet.http.HttpServletResponse;
 import org.contesthub.apiserver.databaseInterface.DTOs.LeaderboardDto;
 import org.contesthub.apiserver.databaseInterface.repositories.ContestGradingRepository;
@@ -27,18 +33,25 @@ public class BaseController {
     @Autowired
     private ContestGradingRepository contestGradingRepository;
 
-    @GetMapping("/")
-    public ResponseEntity<?> index() {
-        return ResponseEntity.ok("Hello World!");
-    }
-
-    @GetMapping("/anonymous")
-    public ResponseEntity<?> getAnonymous() {
-        return ResponseEntity.ok("Hello Anonymus!");
-    }
-
+    /***
+     * This endpoint returns the user's profile information. This resource is public.
+     * @param principal The user's JWT token (optional)
+     * @param username The username of the user whose profile is to be returned (optional)
+     *                 If not provided, the profile of the user corresponding to the JWT token is returned
+     * @return The user's profile information based on username or JWT token
+     */
+    @Operation(summary = "Get user profile", description = "Get user profile information based on username or JWT token")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Requested user profile", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = UserInfoResponse.class))
+            }),
+            @ApiResponse(responseCode = "400", description = "Indicates unknown username and/or token", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class))
+            })
+    })
     @GetMapping({"/profile/", "/profile/{username}"})
-    public ResponseEntity<?> getUser(Principal principal, @PathVariable(required = false) String username) {
+    public ResponseEntity<?> getUser(Principal principal,
+                                     @Parameter(description = "Username of a target user") @PathVariable(required = false) String username) {
         if ((username == null || username.isBlank()) && principal != null) {
             JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
             UserDetailsImpl user = userDetailsService.loadUserByToken(token);
@@ -57,8 +70,18 @@ public class BaseController {
         }
     }
 
+    /***
+     * This endpoint returns general leaderboard or leaderboard for a specific contest
+     * @param contestId The contest ID for which the leaderboard is to be returned (optional)
+     *                  If not provided, the leaderboard for all contests is returned
+     * @return Generated leaderboard
+     */
+    @Operation(summary = "Get leaderboard", description = "Get leaderboard for a specific contest or for all contests")
+    @ApiResponse(responseCode = "200", description = "Leaderboard ordered by score", content = {
+            @Content(mediaType = "application/json", schema = @Schema(implementation = LeaderboardDto.class))
+    })
     @GetMapping({"/leaderboard", "/leaderboard/{contestId}"})
-    public ResponseEntity<?> getLeaderboard(@PathVariable(required = false) Integer contestId) {
+    public ResponseEntity<?> getLeaderboard(@Parameter(description = "Id of the contest for which the leaderboard is generated") @PathVariable(required = false) Integer contestId) {
         Object[][] leaderboardMatrix;
         if (contestId != null) {
             leaderboardMatrix = contestGradingRepository.getLeaderboardByContestId(contestId);
@@ -72,6 +95,20 @@ public class BaseController {
         return ResponseEntity.ok(leaderboard);
     }
 
+    /*** This endpoint is for administrators to validate and introspect JWT tokens. In the same way as the app does. If you want to just see the contents of a token see <a href="https://jwt.io">JWT reference</a> instead.
+     * @param principal The user's JWT token
+     * @return The token's details
+     */
+    @Operation(summary = "Get token details", description = """
+    Get details of a provided token in the same way as the app does.
+    If you want to just see the contents of a token see <a href="https://jwt.io">JWT reference</a> instead.
+    """)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Token details object", content = {
+                    // TODO: schema for JWT token
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class))
+            })
+    })
     @GetMapping("/admin/introspect")
     public ResponseEntity<?> getTokenDetailsAdmin(Principal principal) {
         JwtAuthenticationToken token = (JwtAuthenticationToken) principal;

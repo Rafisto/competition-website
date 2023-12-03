@@ -7,6 +7,7 @@ import org.contesthub.apiserver.databaseInterface.models.Group;
 import org.contesthub.apiserver.databaseInterface.models.User;
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -24,6 +25,46 @@ public class ContestDto implements Serializable {
     private Set<UserDto> users;
 
     public ContestDto() {
+    }
+
+    static class GroupDto {
+        public Integer id;
+        public String name;
+
+        public GroupDto(Integer id, String name) {
+            this.id = id;
+            this.name = name;
+        }
+    }
+
+    static class ContestProblemDto {
+        public Integer id;
+        public String title;
+        public String contents;
+        public Boolean useAutograding;
+        public String useAutogradingAnswer;
+        public Instant deadline;
+
+        public ContestProblemDto(Integer id, String title, String contents, Boolean useAutograding, String useAutogradingAnswer, Instant deadline) {
+            this.id = id;
+            this.title = title;
+            this.contents = contents;
+            this.useAutograding = useAutograding;
+            this.useAutogradingAnswer = useAutogradingAnswer;
+            this.deadline = deadline;
+        }
+    }
+
+    static class UserDto {
+        public Integer id;
+        public String username;
+        public String email;
+
+        public UserDto(Integer id, String username, String email) {
+            this.id = id;
+            this.username = username;
+            this.email = email;
+        }
     }
 
     public ContestDto(Integer id, String title, String description, Boolean isPublished, Set<GroupDto> groups, Set<ContestProblemDto> contestProblems, Set<UserDto> users) {
