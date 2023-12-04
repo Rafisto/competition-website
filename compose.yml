@@ -77,7 +77,6 @@ services:
       - ./docs/build:/srv/slate/build
     depends_on:
      - backend
-
   frontend:
     build: 
       context: ./frontend
