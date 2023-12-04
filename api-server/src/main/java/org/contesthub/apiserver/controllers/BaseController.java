@@ -6,9 +6,11 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletResponse;
 import org.contesthub.apiserver.databaseInterface.DTOs.LeaderboardDto;
 import org.contesthub.apiserver.databaseInterface.repositories.ContestGradingRepository;
+import org.contesthub.apiserver.databaseInterface.repositories.ContestRepository;
 import org.contesthub.apiserver.models.response.UserInfoResponse;
 import org.contesthub.apiserver.services.UserDetailsImpl;
 import org.contesthub.apiserver.services.UserDetailsServiceImpl;
@@ -33,6 +35,9 @@ public class BaseController {
     @Autowired
     private ContestGradingRepository contestGradingRepository;
 
+    @Autowired
+    private ContestRepository contestRepository;
+
     /***
      * This endpoint returns the user's profile information. This resource is public.
      * @param principal The user's JWT token (optional)
@@ -45,9 +50,7 @@ public class BaseController {
             @ApiResponse(responseCode = "200", description = "Requested user profile", content = {
                     @Content(mediaType = "application/json", schema = @Schema(implementation = UserInfoResponse.class))
             }),
-            @ApiResponse(responseCode = "400", description = "Indicates unknown username and/or token", content = {
-                    @Content(mediaType = "application/json", schema = @Schema(implementation = Map.class))
-            })
+            @ApiResponse(responseCode = "400", description = "Indicates unknown username and/or token", content = {@Content()})
     })
     @GetMapping({"/profile/", "/profile/{username}"})
     public ResponseEntity<?> getUser(Principal principal,
@@ -56,14 +59,8 @@ public class BaseController {
             JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
             UserDetailsImpl user = userDetailsService.loadUserByToken(token);
             return ResponseEntity.ok(user);
-        } else if (username.isBlank() && principal == null) {
-            final Map<String, Object> body = new HashMap<>();
-            body.put("status", HttpServletResponse.SC_BAD_REQUEST);
-            body.put("error", "Bad Request");
-            body.put("message", "Either provide a username or provide a valid token");
-            body.put("path", "/profile/{username}");
-
-            return ResponseEntity.badRequest().body(body);
+        } else if (username == null || username.isBlank()) {
+            throw new IllegalArgumentException("Provide either a valid username or  JWT token");
         } else {
             UserDetailsImpl user = userDetailsService.loadUserByUsername(username);
             return ResponseEntity.ok(new UserInfoResponse(user));
@@ -77,13 +74,18 @@ public class BaseController {
      * @return Generated leaderboard
      */
     @Operation(summary = "Get leaderboard", description = "Get leaderboard for a specific contest or for all contests")
-    @ApiResponse(responseCode = "200", description = "Leaderboard ordered by score", content = {
-            @Content(mediaType = "application/json", schema = @Schema(implementation = LeaderboardDto.class))
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Leaderboard ordered by score", content = {
+                @Content(mediaType = "application/json", schema = @Schema(implementation = LeaderboardDto.class))
+        }),
+        @ApiResponse(responseCode = "404", description = "Contest not found")
     })
     @GetMapping({"/leaderboard", "/leaderboard/{contestId}"})
     public ResponseEntity<?> getLeaderboard(@Parameter(description = "Id of the contest for which the leaderboard is generated") @PathVariable(required = false) Integer contestId) {
         Object[][] leaderboardMatrix;
         if (contestId != null) {
+            contestRepository.findByIdAndIsPublishedTrue(contestId).orElseThrow(() ->
+                    new EntityNotFoundException("Could not find contest with id " + contestId));
             leaderboardMatrix = contestGradingRepository.getLeaderboardByContestId(contestId);
         } else {
             leaderboardMatrix = contestGradingRepository.getLeaderboard();

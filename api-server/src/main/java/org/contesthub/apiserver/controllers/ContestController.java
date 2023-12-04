@@ -68,6 +68,7 @@ public class ContestController {
     @GetMapping("list")
     public ResponseEntity<?> getContests(Principal principal,
                                          @Parameter(description = "Whether to list contests the user has joined or not") @RequestParam(defaultValue = "true") Boolean joined) {
+        // TODO: thorough tests
         JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
         UserDetailsImpl user = userDetailsService.loadUserByToken(token);
         List<Contest> contests = contestService.loadContestsUserCanJoin(user);
@@ -101,14 +102,14 @@ public class ContestController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Leaderboard ordered by score", content = {
                     @Content(mediaType = "application/json", schema = @Schema(implementation = LeaderboardDto.class))
-            })
+            }),
+            @ApiResponse(responseCode = "404", description = "Contest not found")
     })
     @GetMapping("{contestId}/leaderboard")
     public ResponseEntity<?> getContestLeaderboard(Principal principal,
                                                    @Parameter(description = "Id of a contest for which the leaderboard will be returned") @PathVariable Integer contestId) {
         JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
         UserDetails user = userDetailsService.loadUserByToken(token);
-        // TODO custom body indicating that the user might not be participant of the contest
         // Not assigning to a variable as it's only needed for validation
         contestRepository.findByIdAndUsersContainsAndIsPublishedTrue(contestId, userRepository.findByUsername(user.getUsername()).orElseThrow(null))
                 .orElseThrow(() -> new EntityNotFoundException("Contest not found"));
@@ -130,7 +131,8 @@ public class ContestController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Contest object with updated user list", content = {
                     @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
-            })
+            }),
+            @ApiResponse(responseCode = "404", description = "Contest not ofund")
     })
     @PostMapping("{contestId}/join")
     public ResponseEntity<?> joinContest(Principal principal,
@@ -140,7 +142,7 @@ public class ContestController {
         // TODO custom body indicating that the user might not be participant of the contest
         Contest contest = contestService.loadContestsUserCanJoin(user).stream()
                 .filter(contestDto -> contestDto.getId().equals(contestId)).findFirst()
-                .orElseThrow(() -> new EntityNotFoundException("Contest not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Contest not found, maybe you're not a participant yet?"));
         // Don't throw as it will never be empty - loadUserByToken() will populate db if needed
         contest.getUsers().add(userRepository.findByUsername(user.getUsername()).orElseThrow(null));
         contestRepository.save(contest);

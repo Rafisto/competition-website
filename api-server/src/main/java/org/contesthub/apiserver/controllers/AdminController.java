@@ -19,11 +19,13 @@ import org.contesthub.apiserver.databaseInterface.repositories.ContestRepository
 import org.contesthub.apiserver.databaseInterface.repositories.GroupRepository;
 import org.contesthub.apiserver.models.requests.ContestRequest;
 import org.contesthub.apiserver.models.requests.ContestProblemRequest;
+import org.contesthub.apiserver.services.GroupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.InvalidObjectException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -41,42 +43,31 @@ public class AdminController {
     @Autowired
     ContestProblemRepository contestProblemRepository;
 
-    // TODO: Possibly move this to a service
-    public Set<Group> listGroupIdToGroup(Integer[] groupIds) {
-        Set<Group> groupObjectSet = new LinkedHashSet<>();
-        for(Integer group : groupIds) {
-            Group groupObject = groupRepository.findById(group).orElseThrow(() ->
-                    new EntityNotFoundException("Could not find group with id " + group));
-            groupObjectSet.add(groupObject);
-        }
-        return groupObjectSet;
-    }
+    @Autowired
+    GroupService groupService;
 
     /***
      * This endpoint lets the admin create a new contest
      * @param request Matches the ContestRequest object representing the contest to be created. This will be fully validated.
      * @return The newly created contest object
      */
-    @Operation(summary="Create a new contest")
+    @Operation(summary = "Create a new contest")
     @ApiResponses(value = {
-            @ApiResponse(responseCode="200", description="The newly created contest object", content =
+            @ApiResponse(responseCode = "200", description= " The newly created contest object", content =
                     {
                             @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
                     }),
-            @ApiResponse(responseCode="400", description="Indicates invalid contest object", content ={@Content()})
+            @ApiResponse(responseCode = "400", description = "Indicates invalid contest object", content = {@Content()}),
+            // This is raised within the GroupService
+            @ApiResponse(responseCode = "404", description = "Tried to provide nonexistent group(s)")
     })
     @PostMapping(value = "contest/create", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<?> createNewContest(@Parameter(description = "Matches the ContestRequest object representing the contest to be created. This will be fully validated.", required = true) @Valid ContestRequest request) {
         if (!request.isValid()) {
-            final Map<String, Object> body = new HashMap<>();
-            body.put("status", HttpServletResponse.SC_BAD_REQUEST);
-            body.put("error", "Bad Request");
-            body.put("message", "Not a valid contest object");
-            body.put("path", "/admin/contest/create");
-            return ResponseEntity.badRequest().body(body);
+            throw new IllegalArgumentException("Not a valid contest object");
         };
 
-        Set<Group> groupObjectSet = listGroupIdToGroup(request.getGroups());
+        Set<Group> groupObjectSet = groupService.loadGroupsFromIdList(request.getGroups());
 
         Contest contest = new Contest(request.getTitle(), request.getDescription(), request.getPublished(), groupObjectSet);
         contestRepository.saveAndFlush(contest);
@@ -93,10 +84,13 @@ public class AdminController {
      * @return The edited contest object
      */
     @Operation(summary="Edit an existing contest")
-    @ApiResponse(responseCode="200", description="The edited contest object", content =
-            {
-                    @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
-            })
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "The edited contest object", content =
+                {
+                        @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
+                }),
+        @ApiResponse(responseCode = "404", description = "Contest or Group(s) not found. Specified in response"),
+    })
     @PutMapping("contest/{contestId}/edit")
     public ResponseEntity<?> editContest(@Parameter(description = "Id of the contest to be edited") @PathVariable Integer contestId,
                                          @Parameter(description = """
@@ -108,7 +102,7 @@ public class AdminController {
         Contest contest = contestRepository.findById(contestId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find contest with id " + contestId));
         if (request.getGroups() != null){
-            Set<Group> groupObjectSet = listGroupIdToGroup(request.getGroups());
+            Set<Group> groupObjectSet = groupService.loadGroupsFromIdList(request.getGroups());
             contest.setGroups(groupObjectSet);
         }
         if (request.getTitle() != null){
@@ -132,10 +126,13 @@ public class AdminController {
      * @return The edited contest object
      */
     @Operation(summary="Publish/unpublish a contest")
-    @ApiResponse(responseCode="200", description="The edited contest object", content =
-            {
-                    @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
-            })
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "The edited contest object", content =
+                {
+                        @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
+                }),
+        @ApiResponse(responseCode = "404", description = "Contest not found")
+    })
     @PostMapping("contest/{contestId}/publish")
     public ResponseEntity<?> publishContest(@Parameter(description = "Id of the contest to be updated") @PathVariable Integer contestId,
                                             @Parameter(description = "Set to false to make contest private") @RequestParam(defaultValue = "true") Boolean publish) {
@@ -152,10 +149,13 @@ public class AdminController {
      * @return The deleted contest object
      */
     @Operation(summary="Delete a contest. This removes the contest permanently from the database.")
-    @ApiResponse(responseCode="200", description="The deleted contest object", content =
-            {
-                    @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
-            })
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "The deleted contest object", content =
+                {
+                        @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
+                }),
+        @ApiResponse(responseCode = "404", description = "Contest not found")
+    })
     @DeleteMapping(value = "contest/{contestId}", consumes = MediaType.ALL_VALUE)
     public ResponseEntity<?> deleteContest(@Parameter(description = "Id of the contest to be deleted")
                                            @PathVariable Integer contestId){
@@ -173,10 +173,13 @@ public class AdminController {
      * @return List of contests matching the query
      */
     @Operation(summary="List all contests in the database")
-    @ApiResponse(responseCode="200", description="List of contests matching the query", content =
-            {
-                    @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
-            })
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "List of contests matching the query", content =
+                {
+                        @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
+                }),
+        @ApiResponse(responseCode = "400", description = "Invalid value of isPublished param")
+    })
     @GetMapping(value = "contest/list", consumes = MediaType.ALL_VALUE)
     public ResponseEntity<?> getContestList(@Parameter(description = "Filter by published/unpublished contents. If not provided all contests are returned")
                                             @RequestParam(required = false) Boolean isPublished) {
@@ -186,9 +189,9 @@ public class AdminController {
             return ResponseEntity.ok(contestRepository.findByIsPublishedTrue().stream().map(ContestDto::new).collect(Collectors.toList()));
         } else if (isPublished == Boolean.FALSE) {
             return ResponseEntity.ok(contestRepository.findByIsPublishedFalse().stream().map(ContestDto::new).collect(Collectors.toList()));
+        } else {
+            throw new IllegalArgumentException("Invalid value for isPublished");
         }
-        List<ContestDto> contestList = contestRepository.getAll().stream().map(ContestDto::new).collect(Collectors.toList());
-        return ResponseEntity.ok(contestList);
     }
 
     /***
@@ -227,7 +230,8 @@ public class AdminController {
                     {
                             @Content(mediaType = "application/json", schema = @Schema(implementation = ContestProblemDto.class))
                     }),
-            @ApiResponse(responseCode="400", description="Indicates invalid contest problem object", content ={@Content()})
+            @ApiResponse(responseCode="400", description="Indicates invalid contest problem object", content ={@Content()}),
+            @ApiResponse(responseCode="404", description="Indicates that the contest does not exist", content ={@Content()})
     })
     @PostMapping(value = "contest/{contestId}/problems/create")
     public ResponseEntity<?> addContestProblem(@Parameter(description = "Id of the contest in which problem will be added") @PathVariable Integer contestId,
@@ -235,12 +239,7 @@ public class AdminController {
         Contest contest = contestRepository.findById(contestId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find contest with id " + contestId));
         if (!request.isValid()) {
-            final Map<String, Object> body = new HashMap<>();
-            body.put("status", HttpServletResponse.SC_BAD_REQUEST);
-            body.put("error", "Bad Request");
-            body.put("message", "Not a valid contest problem object");
-            body.put("path", "/admin/contest/" + contestId + "/problems/add");
-            ResponseEntity.badRequest().body(body);
+            throw new IllegalArgumentException("Not a valid contest problem object");
         };
         ContestProblem contestProblem = new ContestProblem(request.getTitle(), request.getContents(), request.getUseAutograding(), request.getUseAutogradingAnswer(), request.getDeadline(), contest);
         contestProblemRepository.saveAndFlush(contestProblem);
@@ -258,11 +257,10 @@ public class AdminController {
                     {
                             @Content(mediaType = "application/json", schema = @Schema(implementation = ContestProblemDto.class))
                     }),
-//            @ApiResponse(responseCode="400", description="Indicates that the problem statement does not exist", content ={@Content()})
+            @ApiResponse(responseCode="404", description="Indicates that the problem statement does not exist", content ={@Content()})
     })
     @GetMapping(value = "problems/{problemId}", consumes = MediaType.ALL_VALUE)
     public ResponseEntity<?> getProblemDetails(@Parameter(description = "Id of the problem statement to be fetched") @PathVariable Integer problemId) {
-        // TODO: custom body indicating that the problem statement might not exist
         ContestProblemDto contestProblem = new ContestProblemDto(contestProblemRepository.findById(problemId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find contest problem with id " + problemId)));
         return ResponseEntity.ok(contestProblem);
@@ -283,7 +281,7 @@ public class AdminController {
                             @Content(mediaType = "application/json", schema = @Schema(implementation = ContestProblemDto.class))
                     }),
             @ApiResponse(responseCode="400", description="Indicates invalid contest problem object", content ={@Content()}),
-//            @ApiResponse(responseCode="400", description="Indicates that the problem statement does not exist", content ={@Content()})
+            @ApiResponse(responseCode="404", description="Indicates that the problem statement does not exist", content ={@Content()})
     })
     @PutMapping(value = "problems/{problemId}/edit")
     public ResponseEntity<?> editContestProblem(@Parameter(description = "Id of a problem statement to be edited") @PathVariable Integer problemId,
@@ -303,13 +301,7 @@ public class AdminController {
         }
         if (request.getUseAutograding() == Boolean.TRUE){
             if (request.getUseAutogradingAnswer() == null) {
-                final Map<String, Object> body = new HashMap<>();
-                body.put("status", HttpServletResponse.SC_BAD_REQUEST);
-                body.put("error", "Bad Request");
-                body.put("message", "Autograding answer cannot be null or empty");
-                body.put("path", "/admin/problem/" + problemId + "/edit");
-
-                return ResponseEntity.badRequest().body(body);
+                throw new IllegalArgumentException("Autograding answer cannot be null or empty");
             } else {
                 contestProblem.setUseAutograding(request.getUseAutograding());
                 contestProblem.setUseAutogradingAnswer(request.getUseAutogradingAnswer());
@@ -321,13 +313,7 @@ public class AdminController {
         }
         if (request.getDeadline() != null) {
             if (!request.checkDeadline()) {
-                final Map<String, Object> body = new HashMap<>();
-                body.put("status", HttpServletResponse.SC_BAD_REQUEST);
-                body.put("error", "Bad Request");
-                body.put("message", "Deadline cannot be in the past");
-                body.put("path", "/admin/problem/" + problemId + "/edit");
-
-                return ResponseEntity.badRequest().body(body);
+                throw new IllegalArgumentException("Deadline cannot be in the past");
             }
             contestProblem.setDeadline(request.getDeadline());
         }
@@ -342,10 +328,13 @@ public class AdminController {
      * @return The deleted problem statement object
      */
     @Operation(summary="Delete a problem statement. This removes the problem statement permanently from the database.")
-    @ApiResponse(responseCode="200", description="The deleted contest problem object", content =
-            {
-                    @Content(mediaType = "application/json", schema = @Schema(implementation = ContestProblemDto.class))
-            })
+    @ApiResponses(value = {
+            @ApiResponse(responseCode="200", description="The deleted contest problem object", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = ContestProblemDto.class))
+                    }),
+            @ApiResponse(responseCode="404", description="Indicates that the problem statement does not exist", content ={@Content()})
+    })
     @DeleteMapping(value = "problems/{problemId}", consumes = MediaType.ALL_VALUE)
     public ResponseEntity<?> deleteProblem(@Parameter(description = "Id of a problem statement to be deleted") @PathVariable Integer problemId) {
         ContestProblemDto contestProblem = new ContestProblemDto(contestProblemRepository.findById(problemId).orElseThrow(() ->

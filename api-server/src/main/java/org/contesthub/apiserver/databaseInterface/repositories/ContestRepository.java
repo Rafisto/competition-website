@@ -25,6 +25,7 @@ public interface ContestRepository extends JpaRepository<Contest, Integer>, JpaS
     List<Contest> findByIsPublishedFalse();
     List<Contest> findByUsersContainsAndIsPublishedTrue(User user);
     List<Contest> findByGroupsContainsAndIsPublishedTrue(Group group);
+    Optional<Contest> findByIdAndIsPublishedTrue(Integer id);
 
     // TODO: check all functions for need of user filter
     Optional<Contest> findById(Integer id);
