@@ -1,6 +1,6 @@
 services:
   database:
-    image: postgres:latest
+    image: postgres:16-alpine
     environment:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_USER=postgres
@@ -9,26 +9,74 @@ services:
       - ./database/init:/docker-entrypoint-initdb.d/
       - ./database/data:/var/lib/postgresql/data
     ports:
-      - 5432:5432
-    restart: always
+      - 5433:5432
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "postgres"]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  database-keycloak:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=keycloak
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "keycloak"]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
 
   keycloak:
-    image: keycloak/keycloak:latest
+    image: keycloak/keycloak:22.0.5
     environment:
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=admin
       - KC_DB_USERNAME=postgres
       - KC_DB_PASSWORD=postgres
+      - KC_DB_URL_HOST=database-keycloak
     volumes:
       - ./keycloak/keycloak.conf:/keycloak/keycloak.conf
+      - ./keycloak/data:/opt/keycloak/data/import
     ports:
       - 2137:8080
     depends_on:
-      - database
+      - database-keycloak
     command:
-      ["--config-file=/keycloak/keycloak.conf", "start-dev"]
+      ["--config-file=/keycloak/keycloak.conf", "start-dev", "--import-realm"]
     restart: on-failure
 
+  backend:
+    build: 
+      context: ./api-server
+    ports:
+      - 8081:8080
+    volumes:
+      - type: bind
+        source: ./docs
+        target: /app/docs
+    healthcheck:
+      test: ["CMD-SHELL", "curl", "-f", "http://localhost:8080/v3/api-docs", ">", "/app/api-docs.json"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+  
+  docs:
+    build:
+      context: ./docs
+    ports:
+     - 4567:4567
+    environment:
+      - WEB_SERVER_ADDRESS=backend:8080
+    volumes:
+      - ./docs/build:/srv/slate/build
+    depends_on:
+     - backend
   frontend:
     build: 
       context: ./frontend

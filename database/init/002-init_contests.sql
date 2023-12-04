@@ -13,6 +13,14 @@ CREATE TABLE contest_groups_relations (
     FOREIGN KEY (group_id) REFERENCES groups(id)
 );
 
+CREATE TABLE contest_user_relations (
+    contest_id INT,
+    user_id INT,
+    PRIMARY KEY (contest_id, user_id),
+    FOREIGN KEY (contest_id) REFERENCES contests(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
 CREATE TABLE contest_problems (
     id SERIAL PRIMARY KEY,
     title TEXT,
@@ -35,6 +43,8 @@ CREATE TABLE contest_problems (
 CREATE TABLE contest_grading (
     user_id INT,
     problem_id INT,
+    answer TEXT NOT NULL,
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     score INT,
     PRIMARY KEY (user_id, problem_id),
     FOREIGN KEY (user_id) REFERENCES users(id),
