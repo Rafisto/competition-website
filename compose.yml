@@ -8,14 +8,14 @@ services:
     volumes:
       - ./database/init:/docker-entrypoint-initdb.d/
       - ./database/data:/var/lib/postgresql/data
-    ports:
-      - 5433:5432
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres", "-d", "postgres"]
       interval: 5s
       timeout: 10s
       retries: 3
     restart: unless-stopped
+    networks:
+      - backend
 
   database-keycloak:
     image: postgres:16-alpine
@@ -30,6 +30,8 @@ services:
       timeout: 10s
       retries: 3
     restart: unless-stopped
+    networks:
+      - backend
 
   keycloak:
     image: keycloak/keycloak:22.0.5
@@ -42,29 +44,37 @@ services:
     volumes:
       - ./keycloak/keycloak.conf:/keycloak/keycloak.conf
       - ./keycloak/data:/opt/keycloak/data/import
-    ports:
-      - 2137:8080
     depends_on:
       - database-keycloak
     command:
       ["--config-file=/keycloak/keycloak.conf", "start-dev", "--import-realm"]
     restart: on-failure
+    networks:
+      - backend
+      - frontend
 
   backend:
     build: 
       context: ./api-server
-    ports:
-      - 8081:8080
     volumes:
       - type: bind
         source: ./docs
         target: /app/docs
-    healthcheck:
-      test: ["CMD-SHELL", "curl", "-f", "http://localhost:8080/v3/api-docs", ">", "/app/api-docs.json"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
+    environment:
+      - KEYCLOAK_INTERNAL_URL=http://keycloak:8080/
+      - KEYCLOAK_REALM=CompetitionManager
+      - KEYCLOAK_EXTERNAL_URL=http://auth.localhost/
+      - KEYCLOAK_CLIENT_ID=competition-manager-web
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+      - POSTGRES_HOST=database
+    depends_on:
+      - database
+      - keycloak
+    networks:
+      - frontend
+      - backend
   
   docs:
     build:
@@ -77,8 +87,27 @@ services:
       - ./docs/build:/srv/slate/build
     depends_on:
      - backend
+    networks:
+      - frontend
+
   frontend:
     build: 
       context: ./frontend
     ports:
       - 80:80
+    environment:
+      - DOMAIN=localhost
+      - PORT=80
+      - API_URL=http://backend:8080
+      - KEYCLOAK_URL=http://keycloak:8080
+      - API_SUBDOMAIN=api
+      - AUTH_SUBDOMAIN=auth
+    depends_on:
+      - backend
+      - keycloak
+    networks:
+      - frontend
+
+networks:
+  frontend:
+  backend:
