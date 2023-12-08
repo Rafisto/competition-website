@@ -2,6 +2,8 @@ package org.contesthub.apiserver.databaseInterface.models;
 
 import jakarta.persistence.*;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "contest_grading")
 public class ContestGrading {
@@ -20,6 +22,15 @@ public class ContestGrading {
 
     @Column(name = "score")
     private Integer score;
+
+    @Column(name = "answer")
+    private String answer;
+
+    @Column(name = "submittedAt")
+    private Instant submittedAt;
+
+    public ContestGrading() {
+    }
 
     public ContestGradingId getId() {
         return id;
@@ -53,4 +64,19 @@ public class ContestGrading {
         this.score = score;
     }
 
+    public String getAnswer() {
+        return answer;
+    }
+
+    public void setAnswer(String answer) {
+        this.answer = answer;
+    }
+
+    public Instant getSubmittedAt() {
+        return submittedAt;
+    }
+
+    public void setSubmittedAt(Instant submittedAt) {
+        this.submittedAt = submittedAt;
+    }
 }

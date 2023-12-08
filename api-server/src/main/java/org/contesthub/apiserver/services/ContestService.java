@@ -1,8 +1,10 @@
 package org.contesthub.apiserver.services;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.contesthub.apiserver.databaseInterface.DTOs.ContestDto;
 import org.contesthub.apiserver.databaseInterface.DTOs.GroupDto;
 import org.contesthub.apiserver.databaseInterface.models.Contest;
+import org.contesthub.apiserver.databaseInterface.models.User;
 import org.contesthub.apiserver.databaseInterface.repositories.ContestRepository;
 import org.contesthub.apiserver.databaseInterface.repositories.GroupRepository;
 import org.contesthub.apiserver.databaseInterface.repositories.UserRepository;
@@ -29,5 +31,14 @@ public class ContestService {
             contests.addAll(contestRepository.findByGroupsContainsAndIsPublishedTrue(groupRepository.getReferenceById(group.getId())));
         }
         return contests;
+    }
+
+    public List<Contest> loadContestByProblem(Integer problemId) {
+        return null;
+    }
+
+    public List<Contest> loadUserContests(UserDetailsImpl user){
+        User dbUser = userRepository.findByUsername(user.getUsername()).orElseThrow(null);
+        return contestRepository.findByUsersContainsAndIsPublishedTrue(dbUser);
     }
 }
