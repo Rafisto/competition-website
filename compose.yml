@@ -69,6 +69,7 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=postgres
       - POSTGRES_HOST=database
+    restart: on-failure
     depends_on:
       - database
       - keycloak
@@ -76,19 +77,19 @@ services:
       - frontend
       - backend
   
-  docs:
-    build:
-      context: ./docs
-    ports:
-     - 4567:4567
-    environment:
-      - WEB_SERVER_ADDRESS=backend:8080
-    volumes:
-      - ./docs/build:/srv/slate/build
-    depends_on:
-     - backend
-    networks:
-      - frontend
+#  docs:
+#    build:
+#      context: ./docs
+#    ports:
+#     - 4567:4567
+#    environment:
+#      - WEB_SERVER_ADDRESS=backend:8080
+#    volumes:
+#      - ./docs/build:/srv/slate/build
+#    depends_on:
+#     - backend
+#    networks:
+#      - frontend
 
   frontend:
     build: 
