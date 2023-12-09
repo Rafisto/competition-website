@@ -25,8 +25,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@RestController("/submissions")
-public class SubmissionController {
+@RestController
+@RequestMapping("/problems/")
+public class ProblemsController {
     @Autowired
     private UserDetailsServiceImpl userDetailsService;
 

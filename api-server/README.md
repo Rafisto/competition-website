@@ -12,6 +12,15 @@
     - [x] Users can view all contests available to them (any of their groups) (/contests/list)
     - [x] Users can join a contest (available to any of their groups) (/contests/{contestId}/join) 
     - [x] Users can view all contests they are participating in (/contests/joined)
+- [ ] Group Management:
+    - [x] Admins can create groups (/admin/groups/create)
+    - [ ] Admins can edit groups (/admin/groups/{groupId}/edit)
+    - [x] Admins can view all groups (/admin/groups/list)
+    - [x] Admins can view a specific group (/admin/groups/{groupId})
+    - [ ] Admins can delete a group (/admin/groups/{groupId})
+    - [ ] Admins can add users to a group (/admin/groups/{groupId}/users/add)
+    - [ ] Admins can remove users from a group (/admin/groups/{groupId}/users/remove)
+    - [x] Admins can view all users in a group (/admin/groups/{groupId}/users)
 - [x] Problem Statements: Each contest contains a set of problem statements that participants can access. Problem statements may include text descriptions, input/output examples, and constraints.
     - [x] Admins can create problem statements (/admin/contests/{contestId}/problems/create)
     - [x] Admins can edit problem statements (/admin/problems/{problemId}/edit)

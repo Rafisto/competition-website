@@ -33,7 +33,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-@RestController("/contests")
+@RestController()
+@RequestMapping("/contests/")
 public class ContestController {
 
     @Autowired
@@ -56,7 +57,6 @@ public class ContestController {
 
     /***
      * This endpoint lists all contests in which the user can participate
-     * @param principal The user's JWT token
      * @param joined Whether to list contests the user has joined or not (default: true)
      */
     @Operation(summary = "Get contests", description = "Get contests in which the user can participate")
@@ -66,12 +66,8 @@ public class ContestController {
             })
     })
     @GetMapping("list")
-    public ResponseEntity<?> getContests(Principal principal,
-                                         @Parameter(description = "Whether to list contests the user has joined or not") @RequestParam(defaultValue = "true") Boolean joined) {
-        // TODO: thorough tests
-        JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
-        UserDetailsImpl user = userDetailsService.loadUserByToken(token);
-        List<Contest> contests = contestService.loadContestsUserCanJoin(user);
+    public ResponseEntity<?> getContests(@Parameter(description = "Whether to list contests the user has joined or not") @RequestParam(defaultValue = "true") Boolean joined) {
+        List<Contest> contests = contestRepository.findByIsPublishedTrue();
         List<ContestDto> contestResponse = contests.stream().map(ContestDto::new).toList();
         return ResponseEntity.ok(contestResponse);
     }
@@ -139,7 +135,7 @@ public class ContestController {
                                          @Parameter(description = "Id of a contest you want to join") @PathVariable Integer contestId) {
         JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
         UserDetailsImpl user = userDetailsService.loadUserByToken(token);
-        // TODO custom body indicating that the user might not be participant of the contest
+        // TODO - Joining a contest should require permission
         Contest contest = contestService.loadContestsUserCanJoin(user).stream()
                 .filter(contestDto -> contestDto.getId().equals(contestId)).findFirst()
                 .orElseThrow(() -> new EntityNotFoundException("Contest not found, maybe you're not a participant yet?"));

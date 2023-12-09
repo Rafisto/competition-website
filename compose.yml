@@ -69,6 +69,7 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=postgres
       - POSTGRES_HOST=database
+    restart: on-failure
     depends_on:
       - database
       - keycloak
