@@ -11,18 +11,28 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.contesthub.apiserver.databaseInterface.DTOs.ContestDto;
 import org.contesthub.apiserver.databaseInterface.DTOs.ContestProblemDto;
+import org.contesthub.apiserver.databaseInterface.DTOs.GroupDto;
+import org.contesthub.apiserver.databaseInterface.DTOs.UserDto;
 import org.contesthub.apiserver.databaseInterface.models.Contest;
 import org.contesthub.apiserver.databaseInterface.models.ContestProblem;
 import org.contesthub.apiserver.databaseInterface.models.Group;
+import org.contesthub.apiserver.databaseInterface.models.User;
 import org.contesthub.apiserver.databaseInterface.repositories.ContestProblemRepository;
 import org.contesthub.apiserver.databaseInterface.repositories.ContestRepository;
 import org.contesthub.apiserver.databaseInterface.repositories.GroupRepository;
+import org.contesthub.apiserver.databaseInterface.repositories.UserRepository;
 import org.contesthub.apiserver.models.requests.ContestRequest;
 import org.contesthub.apiserver.models.requests.ContestProblemRequest;
+import org.contesthub.apiserver.models.requests.GroupRequest;
+import org.contesthub.apiserver.services.ContestService;
 import org.contesthub.apiserver.services.GroupService;
+import org.contesthub.apiserver.services.UserDetailsImpl;
+import org.contesthub.apiserver.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.parameters.P;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.InvalidObjectException;
@@ -45,6 +55,15 @@ public class AdminController {
 
     @Autowired
     GroupService groupService;
+
+    @Autowired
+    UserDetailsServiceImpl userService;
+
+    @Autowired
+    ContestService contestService;
+
+    @Autowired
+    UserRepository userRepository;
 
     /***
      * This endpoint lets the admin create a new contest
@@ -341,5 +360,169 @@ public class AdminController {
                 new EntityNotFoundException("Could not find contest problem with id " + problemId)));
         contestProblemRepository.deleteById(problemId);
         return ResponseEntity.ok(contestProblem);
+    }
+
+    @Operation(summary="Get all groups in the database")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode="200", description="List of groups in the database", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = GroupDto.class))
+                    }),
+            @ApiResponse(responseCode="404", description="Indicates that no groups exist in the database", content ={@Content()})
+    })
+    @GetMapping(value = "groups/list", consumes = MediaType.ALL_VALUE)
+    public ResponseEntity<?> getGroupList() {
+        // Is there a point in returning all info though? It's admin endpoint so I guess?
+        List<GroupDto> groups = groupRepository.findAll().stream().map(GroupDto::new).toList();
+        if (groups.isEmpty()){
+            throw new EntityNotFoundException("No groups found in the database");
+        }
+        return ResponseEntity.ok(groups);
+    }
+
+    @Operation(summary="Get details of a group")
+    @ApiResponses({
+            @ApiResponse(responseCode="200", description="The requested group object", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = GroupDto.class))
+                    }),
+            @ApiResponse(responseCode="404", description="Indicates that the group does not exist", content ={@Content()})
+
+    })
+    @GetMapping(value = "groups/{groupId}", consumes = MediaType.ALL_VALUE)
+    public ResponseEntity<?> getGroupDetails(@Parameter(description = "Id of a group to be fetched") @PathVariable Integer groupId) {
+        GroupDto group = new GroupDto(groupRepository.findById(groupId).orElseThrow(() ->
+                new EntityNotFoundException("Could not find group with id " + groupId)));
+        return ResponseEntity.ok(group);
+    }
+
+    @Operation(summary="Create a new group")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode="200", description="The newly created group object", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = GroupDto.class))
+                    }),
+            @ApiResponse(responseCode="400", description="Indicates invalid group object", content ={@Content()})
+    })
+    @PostMapping(value = "groups/create", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public ResponseEntity<?> createGroup(@Parameter(description = "Matches the GroupRequest object representing the group to be created. This will be fully validated.", required = true) GroupRequest request) {
+        Group group = new Group();
+        group.setName(request.getName());
+        group.setContests(contestService.loadContestsFromIdList(request.getContests()));
+        group.setUsers(userService.loadUsersFromIdList(request.getUsers()));
+        Group newGroup = groupRepository.saveAndFlush(group);
+        return ResponseEntity.ok(newGroup);
+    }
+
+    @Operation(summary="Get all users in a group")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode="200", description="List of users in the group", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = UserDto.class))
+                    }),
+            @ApiResponse(responseCode="404", description="Indicates that the group does not exist", content ={@Content()})
+    })
+    @GetMapping(value = "groups/{groupId}/users", consumes = MediaType.ALL_VALUE)
+    public ResponseEntity<?> getGroupUsers(@Parameter(description = "Id of a fetched group") @PathVariable Integer groupId) {
+        Group group = groupRepository.findById(groupId).orElseThrow(() ->
+                new EntityNotFoundException("Could not find group with id " + groupId));
+        return ResponseEntity.ok(group.getUsers().stream().map(UserDto::new).toList());
+    }
+
+    @Operation(summary="Add a user to a group", description = "To add multiple users use the group edit endpoint")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode="200", description="The edited group object", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = UserDto.class))
+                    }),
+            @ApiResponse(responseCode="404", description="Indicates that the group or user does not exist", content ={@Content()})
+    })
+    @PostMapping(value = "groups/{groupId}/users/add", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public ResponseEntity<?> addUserToGroup(@Parameter(description = "Id of a group to which user will be added") @PathVariable Integer groupId,
+                                            @Parameter(description = "Username of the user that will be added to group") @RequestParam String username) {
+        Group group = groupRepository.findById(groupId).orElseThrow(() ->
+                new EntityNotFoundException("Could not find group with id " + groupId));
+
+        User userObject;
+        try {
+            UserDetailsImpl user = userService.loadUserByUsername(username);
+            userObject = user.getUser();
+        } catch(UsernameNotFoundException e) {
+            userObject = userService.createTemporaryUser(username);
+        }
+
+        group.getUsers().add(userObject);
+        groupRepository.saveAndFlush(group);
+        return ResponseEntity.ok(group.getUsers().stream().map(UserDto::new).toList());
+    }
+
+    @Operation(summary="Remove a user from a group", description = "To add multiple users use the group edit endpoint")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode="200", description="The edited group object", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = UserDto.class))
+                    }),
+            @ApiResponse(responseCode="404", description="Indicates that the group or user does not exist", content ={@Content()})
+    })
+    @PostMapping(value = "groups/{groupId}/users/remove", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public ResponseEntity<?> removeUserFromGroup(@Parameter(description = "Id of a group to which user will be removed") @PathVariable Integer groupId,
+                                                 @Parameter(description = "Username of the user that will be removed from the group") @RequestParam String username) {
+        Group group = groupRepository.findById(groupId).orElseThrow(() ->
+                new EntityNotFoundException("Could not find group with id " + groupId));
+
+        UserDetailsImpl user = userService.loadUserByUsername(username);
+        Boolean response = group.getUsers().remove(user.getUser());
+        if (!response.equals(Boolean.TRUE)) {
+            throw new EntityNotFoundException("Could not find user with username " + username + " in group with id " + groupId);
+        } else {
+            groupRepository.saveAndFlush(group);
+            return ResponseEntity.ok(group.getUsers().stream().map(UserDto::new).toList());
+        }
+    }
+
+    @Operation(summary="Delete a group. This removes the group permanently from the database.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode="200", description="The deleted group object", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = GroupDto.class))
+                    }),
+            @ApiResponse(responseCode="404", description="Indicates that the group does not exist", content ={@Content()})
+    })
+    @DeleteMapping(value = "groups/{groupId}", consumes = MediaType.ALL_VALUE)
+    public ResponseEntity<?> deleteGroup(@Parameter(description = "Id of the group to be deleted") @PathVariable Integer groupId) {
+        Group group = groupRepository.findById(groupId).orElseThrow(() ->
+                new EntityNotFoundException("Could not find group with id " + groupId));
+        groupRepository.deleteById(groupId);
+        return ResponseEntity.ok(new GroupDto(group));
+    }
+
+    @Operation(summary="Edit an existing group")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode="200", description="The edited group object", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = GroupDto.class))
+                    }),
+            @ApiResponse(responseCode="400", description="Indicates invalid group object", content ={@Content()}),
+            @ApiResponse(responseCode="404", description="Indicates that the group does not exist", content ={@Content()})
+    })
+    @PutMapping(value = "groups/{groupId}/edit", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public ResponseEntity<?> editGroup(@Parameter(description = "Id of the group to be modified") @PathVariable Integer groupId,
+                                       @Parameter(description = "Modified group. Specify only the fields you want to modify.") GroupRequest request){
+        Group group = groupRepository.findById(groupId).orElseThrow(() ->
+                new EntityNotFoundException("Could not find group with id " + groupId));
+        if (request.getName() != null) {
+            if (request.getName().isBlank() && request.getName().length() < 3) {
+                throw new IllegalArgumentException("Group name has to be longer than 3 characters");
+            }
+            group.setName(request.getName());
+        }
+        if (request.getContests() != null) {
+            group.setContests(contestService.loadContestsFromIdList(request.getContests()));
+        }
+        if (request.getUsers() != null) {
+            group.setUsers(userService.loadUsersFromIdList(request.getUsers()));
+        }
+        groupRepository.saveAndFlush(group);
+        return ResponseEntity.ok(new GroupDto(group));
     }
 }
