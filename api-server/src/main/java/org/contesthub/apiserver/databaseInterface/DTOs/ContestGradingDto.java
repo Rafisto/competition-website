@@ -27,7 +27,8 @@ public class ContestGradingDto implements Serializable {
                                              contestGrading.getProblem().getUseAutogradingAnswer(),
                                              contestGrading.getProblem().getDeadline());
         this.user = new UserDto(contestGrading.getUser().getId(), contestGrading.getUser().getUsername(), contestGrading.getUser().getEmail());
-        this.answer = contestGrading.
+        this.answer = contestGrading.getAnswer();
+        this.submittedAt = contestGrading.getSubmittedAt();
     }
 
     public ContestGradingDto(Integer score, UserDto user) {

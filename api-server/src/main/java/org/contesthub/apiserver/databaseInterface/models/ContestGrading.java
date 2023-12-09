@@ -32,6 +32,12 @@ public class ContestGrading {
     public ContestGrading() {
     }
 
+    public ContestGrading(User user, ContestProblem problem, String answer) {
+        this.user = user;
+        this.problem = problem;
+        this.answer = answer;
+    }
+
     public ContestGradingId getId() {
         return id;
     }
