@@ -4,6 +4,7 @@ import org.contesthub.apiserver.databaseInterface.DTOs.ContestDto;
 import org.contesthub.apiserver.databaseInterface.DTOs.ContestGradingDto;
 import org.contesthub.apiserver.databaseInterface.DTOs.GroupDto;
 import org.contesthub.apiserver.databaseInterface.DTOs.UserDto;
+import org.contesthub.apiserver.databaseInterface.models.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -19,9 +20,7 @@ public class UserDetailsImpl implements UserDetails {
 
     private Collection<? extends GrantedAuthority> authorities;
 
-    private Set<ContestGradingDto> contestGradings = new LinkedHashSet<>();
-    private Set<ContestDto> contests = new LinkedHashSet<>();
-    private Set<GroupDto> groups = new LinkedHashSet<>();
+    private User user;
 
     public UserDetailsImpl(Integer id, String username, String email, Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
@@ -37,15 +36,21 @@ public class UserDetailsImpl implements UserDetails {
                                    jwt.getAuthorities());
     }
 
-    public static UserDetailsImpl build(UserDto user) {
+    public static UserDetailsImpl build(User user) {
         UserDetailsImpl userDetails= new UserDetailsImpl(user.getId(),
                                                          user.getUsername(),
                                                          user.getEmail(),
                                                 null);
-        userDetails.setContestGradings(user.getContestGradings());
-        userDetails.setContests(user.getContests());
-        userDetails.setGroups(user.getGroups());
+        userDetails.user = user;
         return userDetails;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 
     public Integer getId() {
@@ -89,31 +94,6 @@ public class UserDetailsImpl implements UserDetails {
     public void setAuthorities(Collection<? extends GrantedAuthority> authorities) {
         this.authorities = authorities;
     }
-
-    public Set<ContestGradingDto> getContestGradings() {
-        return contestGradings;
-    }
-
-    public void setContestGradings(Set<ContestGradingDto> contestGradings) {
-        this.contestGradings = contestGradings;
-    }
-
-    public Set<ContestDto> getContests() {
-        return contests;
-    }
-
-    public void setContests(Set<ContestDto> contests) {
-        this.contests = contests;
-    }
-
-    public Set<GroupDto> getGroups() {
-        return groups;
-    }
-
-    public void setGroups(Set<GroupDto> groups) {
-        this.groups = groups;
-    }
-
 
     @Override
     public boolean isAccountNonExpired() {

@@ -42,4 +42,5 @@ public interface ContestRepository extends JpaRepository<Contest, Integer>, JpaS
     @Query("SELECT c FROM Contest c")
     List<Contest> getAll();
 
+    Set<Contest> findAllByIdIn(Integer[] contestIds);
 }

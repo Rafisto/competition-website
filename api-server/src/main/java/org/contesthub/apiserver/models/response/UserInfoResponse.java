@@ -7,6 +7,7 @@ import org.contesthub.apiserver.services.UserDetailsImpl;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class UserInfoResponse {
     private String username;
@@ -35,8 +36,8 @@ public class UserInfoResponse {
 
     public UserInfoResponse(UserDetailsImpl user){
         this.username = user.getUsername();
-        this.contests = user.getContests();
-        this.groups = user.getGroups();
+        this.contests = user.getUser().getContests().stream().map(ContestDto::new).collect(Collectors.toSet());
+        this.groups = user.getUser().getGroups().stream().map(GroupDto::new).collect(Collectors.toSet());
     }
 
     // Getters and setters

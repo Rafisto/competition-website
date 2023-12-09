@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletResponse;
 import org.contesthub.apiserver.databaseInterface.DTOs.LeaderboardDto;
+import org.contesthub.apiserver.databaseInterface.DTOs.UserDto;
 import org.contesthub.apiserver.databaseInterface.repositories.ContestGradingRepository;
 import org.contesthub.apiserver.databaseInterface.repositories.ContestRepository;
 import org.contesthub.apiserver.models.response.UserInfoResponse;
@@ -58,7 +59,7 @@ public class BaseController {
         if ((username == null || username.isBlank()) && principal != null) {
             JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
             UserDetailsImpl user = userDetailsService.loadUserByToken(token);
-            return ResponseEntity.ok(user);
+            return ResponseEntity.ok(new UserDto(user.getUser()));
         } else if (username == null || username.isBlank()) {
             throw new IllegalArgumentException("Provide either a valid username or  JWT token");
         } else {
