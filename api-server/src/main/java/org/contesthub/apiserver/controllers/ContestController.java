@@ -12,6 +12,7 @@ import org.contesthub.apiserver.databaseInterface.DTOs.ContestDto;
 import org.contesthub.apiserver.databaseInterface.DTOs.GroupDto;
 import org.contesthub.apiserver.databaseInterface.DTOs.LeaderboardDto;
 import org.contesthub.apiserver.databaseInterface.models.Contest;
+import org.contesthub.apiserver.databaseInterface.models.ContestProblem;
 import org.contesthub.apiserver.databaseInterface.models.Group;
 import org.contesthub.apiserver.databaseInterface.models.User;
 import org.contesthub.apiserver.databaseInterface.repositories.ContestGradingRepository;
@@ -143,5 +144,24 @@ public class ContestController {
         contest.getUsers().add(userRepository.findByUsername(user.getUsername()).orElseThrow(null));
         contestRepository.save(contest);
         return ResponseEntity.ok(new ContestDto(contest));
+    }
+
+    // TODO: New endpoints for review
+    @Operation(summary = "Get problem statements for a contest")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List of problem statements for a contest", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
+            }),
+            @ApiResponse(responseCode = "404", description = "Contest not found")
+    })
+    @GetMapping("{contestId}/problems")
+    public ResponseEntity<?> getContestProblems(Principal principal,
+                                                @Parameter(description = "Id of a contest for which the problems will be returned") @PathVariable Integer contestId) {
+        UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);
+        Set<ContestProblem> contestProblems = contestService.loadContestsUserCanJoin(userDetails).stream()
+                .filter(contest -> contest.getId().equals(contestId)).findFirst().orElseThrow(
+                        () -> new EntityNotFoundException("Contest Not found")
+                ).getContestProblems();
+        return ResponseEntity.ok(contestProblems);
     }
 }
