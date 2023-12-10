@@ -1,11 +1,15 @@
 package org.contesthub.apiserver.databaseInterface.models;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.DynamicInsert;
+import org.hibernate.annotations.DynamicUpdate;
 
 import java.time.Instant;
 
 @Entity
 @Table(name = "contest_grading")
+@DynamicInsert
+@DynamicUpdate
 public class ContestGrading {
     @EmbeddedId
     private ContestGradingId id;

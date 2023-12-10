@@ -29,13 +29,6 @@ public class UserDetailsImpl implements UserDetails {
         this.authorities = authorities;
     }
 
-    public static UserDetailsImpl build(UserDto user, JwtAuthenticationToken jwt) {
-        return new UserDetailsImpl(user.getId(),
-                                   jwt.getTokenAttributes().get("preferred_username").toString(),
-                                   jwt.getTokenAttributes().get("email") != null ? jwt.getTokenAttributes().get("email").toString() : null,
-                                   jwt.getAuthorities());
-    }
-
     public static UserDetailsImpl build(User user) {
         UserDetailsImpl userDetails= new UserDetailsImpl(user.getId(),
                                                          user.getUsername(),

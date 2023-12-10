@@ -18,6 +18,7 @@ import org.contesthub.apiserver.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
@@ -53,13 +54,13 @@ public class BaseController {
             }),
             @ApiResponse(responseCode = "400", description = "Indicates unknown username and/or token", content = {@Content()})
     })
-    @GetMapping({"/profile/", "/profile/{username}"})
+    @GetMapping({"/profile", "/profile/{username}"})
     public ResponseEntity<?> getUser(Principal principal,
                                      @Parameter(description = "Username of a target user") @PathVariable(required = false) String username) {
         if ((username == null || username.isBlank()) && principal != null) {
             JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
             UserDetailsImpl user = userDetailsService.loadUserByToken(token);
-            return ResponseEntity.ok(new UserDto(user.getUser()));
+            return ResponseEntity.ok(new UserInfoResponse(user));
         } else if (username == null || username.isBlank()) {
             throw new IllegalArgumentException("Provide either a valid username or  JWT token");
         } else {
@@ -82,6 +83,7 @@ public class BaseController {
         @ApiResponse(responseCode = "404", description = "Contest not found")
     })
     @GetMapping({"/leaderboard", "/leaderboard/{contestId}"})
+    @Transactional
     public ResponseEntity<?> getLeaderboard(@Parameter(description = "Id of the contest for which the leaderboard is generated") @PathVariable(required = false) Integer contestId) {
         Object[][] leaderboardMatrix;
         if (contestId != null) {

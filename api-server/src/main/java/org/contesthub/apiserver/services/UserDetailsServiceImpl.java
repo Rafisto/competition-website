@@ -9,6 +9,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.stereotype.Service;
 
 import org.contesthub.apiserver.databaseInterface.repositories.UserRepository;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
@@ -20,7 +21,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     UserRepository userRepository;
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public UserDetailsImpl loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(username).orElseThrow(() -> {
             throw new UsernameNotFoundException("User Not Found with username: " + username);
@@ -51,7 +52,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             userRepository.saveAndFlush(user);
         }
 
-        return UserDetailsImpl.build(new UserDto(user), token);
+        return UserDetailsImpl.build(user);
     }
 
     @Transactional

@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.persistence.EntityNotFoundException;
 import org.apache.coyote.Response;
 import org.contesthub.apiserver.databaseInterface.DTOs.ContestDto;
+import org.contesthub.apiserver.databaseInterface.DTOs.ContestProblemDto;
 import org.contesthub.apiserver.databaseInterface.DTOs.GroupDto;
 import org.contesthub.apiserver.databaseInterface.DTOs.LeaderboardDto;
 import org.contesthub.apiserver.databaseInterface.models.Contest;
@@ -81,7 +82,8 @@ public class ContestController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "All contests in which user participates", content = {
                     @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
-            })
+            }),
+            @ApiResponse(responseCode = "404", description = "User is not participating in any contests")
     })
     @GetMapping("list/joined")
     public ResponseEntity<?> getUserContestList(Principal principal) {
@@ -95,7 +97,7 @@ public class ContestController {
      * This endpoint lists the leaderboard of a contest
      * @param principal The user's JWT token
      */
-    @Operation(summary = "Get contest leaderboard")
+    @Operation(summary = "Get contest leaderboard", description = "Get leaderboard for a specific contest, accessible only to participants")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Leaderboard ordered by score", content = {
                     @Content(mediaType = "application/json", schema = @Schema(implementation = LeaderboardDto.class))
@@ -106,9 +108,9 @@ public class ContestController {
     public ResponseEntity<?> getContestLeaderboard(Principal principal,
                                                    @Parameter(description = "Id of a contest for which the leaderboard will be returned") @PathVariable Integer contestId) {
         JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
-        UserDetails user = userDetailsService.loadUserByToken(token);
+        UserDetailsImpl user = userDetailsService.loadUserByToken(token);
         // Not assigning to a variable as it's only needed for validation
-        contestRepository.findByIdAndUsersContainsAndIsPublishedTrue(contestId, userRepository.findByUsername(user.getUsername()).orElseThrow(null))
+        contestRepository.findByIdAndUsersContainsAndIsPublishedTrue(contestId, user.getUser())
                 .orElseThrow(() -> new EntityNotFoundException("Contest not found"));
         Object[][] leaderboardMatrix = contestGradingRepository.getLeaderboardByContestId(contestId);
         // Maybe into a function as it's used in BasicController.getLeaderboard() too?

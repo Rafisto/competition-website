@@ -25,7 +25,7 @@ public class Group {
     private Set<Contest> contests = new LinkedHashSet<>();
 
     @ManyToMany()
-    @JoinTable(name = "user_groups_relations",
+    @JoinTable(name = "user_group_relations",
             joinColumns = @JoinColumn(name = "group_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id"))
     private Set<User> users = new LinkedHashSet<>();

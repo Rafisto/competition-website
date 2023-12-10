@@ -20,7 +20,7 @@ public class ErrorHandlerAdvice extends ResponseEntityExceptionHandler {
         body.put("error", "Not Found");
         body.put("message", ex.getMessage());
         body.put("path", request.getRequestURI());
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.status(HttpServletResponse.SC_NOT_FOUND).body(body);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

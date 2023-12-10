@@ -29,10 +29,12 @@ import org.contesthub.apiserver.services.GroupService;
 import org.contesthub.apiserver.services.UserDetailsImpl;
 import org.contesthub.apiserver.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.parameters.P;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.InvalidObjectException;
@@ -81,6 +83,8 @@ public class AdminController {
             @ApiResponse(responseCode = "404", description = "Tried to provide nonexistent group(s)")
     })
     @PostMapping(value = "contest/create", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @Transactional
+    @Modifying
     public ResponseEntity<?> createNewContest(@Parameter(description = "Matches the ContestRequest object representing the contest to be created. This will be fully validated.", required = true) @Valid ContestRequest request) {
         if (!request.isValid()) {
             throw new IllegalArgumentException("Not a valid contest object");
@@ -111,6 +115,8 @@ public class AdminController {
         @ApiResponse(responseCode = "404", description = "Contest or Group(s) not found. Specified in response"),
     })
     @PutMapping("contest/{contestId}/edit")
+    @Transactional
+    @Modifying
     public ResponseEntity<?> editContest(@Parameter(description = "Id of the contest to be edited") @PathVariable Integer contestId,
                                          @Parameter(description = """
                                                      Matches the ContestRequest object representing the contest to be edited. At least one of the fields must be provided.
@@ -153,6 +159,8 @@ public class AdminController {
         @ApiResponse(responseCode = "404", description = "Contest not found")
     })
     @PostMapping("contest/{contestId}/publish")
+    @Transactional
+    @Modifying
     public ResponseEntity<?> publishContest(@Parameter(description = "Id of the contest to be updated") @PathVariable Integer contestId,
                                             @Parameter(description = "Set to false to make contest private") @RequestParam(defaultValue = "true") Boolean publish) {
         contestRepository.updateIsPublishedById(publish, contestId);
@@ -176,6 +184,8 @@ public class AdminController {
         @ApiResponse(responseCode = "404", description = "Contest not found")
     })
     @DeleteMapping(value = "contest/{contestId}", consumes = MediaType.ALL_VALUE)
+    @Transactional
+    @Modifying
     public ResponseEntity<?> deleteContest(@Parameter(description = "Id of the contest to be deleted")
                                            @PathVariable Integer contestId){
         // TODO: custom body indicating that the contest might not exist
@@ -200,6 +210,7 @@ public class AdminController {
         @ApiResponse(responseCode = "400", description = "Invalid value of isPublished param")
     })
     @GetMapping(value = "contest/list", consumes = MediaType.ALL_VALUE)
+    @Transactional
     public ResponseEntity<?> getContestList(@Parameter(description = "Filter by published/unpublished contents. If not provided all contests are returned")
                                             @RequestParam(required = false) Boolean isPublished) {
         if (isPublished == null) {
@@ -227,6 +238,7 @@ public class AdminController {
             @ApiResponse(responseCode="400", description="Indicates that no problems exist within given contest", content ={@Content()})
     })
     @GetMapping(value = {"contest/{contestId}/problems"}, consumes = MediaType.ALL_VALUE)
+    @Transactional
     public ResponseEntity<?> getContestProblemList(@Parameter(description = "Id of the contest whose problems are to be listed") @PathVariable Integer contestId) {
         List<ContestProblemDto> contestProblems = contestProblemRepository.findAllByContestId(contestId).stream().map(ContestProblemDto::new).toList();
         if (contestProblems.isEmpty()) {
@@ -253,6 +265,8 @@ public class AdminController {
             @ApiResponse(responseCode="404", description="Indicates that the contest does not exist", content ={@Content()})
     })
     @PostMapping(value = "contest/{contestId}/problems/create")
+    @Transactional
+    @Modifying
     public ResponseEntity<?> addContestProblem(@Parameter(description = "Id of the contest in which problem will be added") @PathVariable Integer contestId,
                                                @Parameter(description = "Represents problem statement that will be created") @Valid ContestProblemRequest request) {
         Contest contest = contestRepository.findById(contestId).orElseThrow(() ->
@@ -279,6 +293,7 @@ public class AdminController {
             @ApiResponse(responseCode="404", description="Indicates that the problem statement does not exist", content ={@Content()})
     })
     @GetMapping(value = "problems/{problemId}", consumes = MediaType.ALL_VALUE)
+    @Transactional
     public ResponseEntity<?> getProblemDetails(@Parameter(description = "Id of the problem statement to be fetched") @PathVariable Integer problemId) {
         ContestProblemDto contestProblem = new ContestProblemDto(contestProblemRepository.findById(problemId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find contest problem with id " + problemId)));
@@ -303,6 +318,8 @@ public class AdminController {
             @ApiResponse(responseCode="404", description="Indicates that the problem statement does not exist", content ={@Content()})
     })
     @PutMapping(value = "problems/{problemId}/edit")
+    @Transactional
+    @Modifying
     public ResponseEntity<?> editContestProblem(@Parameter(description = "Id of a problem statement to be edited") @PathVariable Integer problemId,
                                                 @Parameter(description = """
                                                             Matches the ContestProblemRequest object representing the contest to be edited. At least one of the fields must be provided.
@@ -355,6 +372,8 @@ public class AdminController {
             @ApiResponse(responseCode="404", description="Indicates that the problem statement does not exist", content ={@Content()})
     })
     @DeleteMapping(value = "problems/{problemId}", consumes = MediaType.ALL_VALUE)
+    @Transactional
+    @Modifying
     public ResponseEntity<?> deleteProblem(@Parameter(description = "Id of a problem statement to be deleted") @PathVariable Integer problemId) {
         ContestProblemDto contestProblem = new ContestProblemDto(contestProblemRepository.findById(problemId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find contest problem with id " + problemId)));
@@ -371,6 +390,7 @@ public class AdminController {
             @ApiResponse(responseCode="404", description="Indicates that no groups exist in the database", content ={@Content()})
     })
     @GetMapping(value = "groups/list", consumes = MediaType.ALL_VALUE)
+    @Transactional
     public ResponseEntity<?> getGroupList() {
         // Is there a point in returning all info though? It's admin endpoint so I guess?
         List<GroupDto> groups = groupRepository.findAll().stream().map(GroupDto::new).toList();
@@ -390,6 +410,7 @@ public class AdminController {
 
     })
     @GetMapping(value = "groups/{groupId}", consumes = MediaType.ALL_VALUE)
+    @Transactional
     public ResponseEntity<?> getGroupDetails(@Parameter(description = "Id of a group to be fetched") @PathVariable Integer groupId) {
         GroupDto group = new GroupDto(groupRepository.findById(groupId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find group with id " + groupId)));
@@ -405,7 +426,12 @@ public class AdminController {
             @ApiResponse(responseCode="400", description="Indicates invalid group object", content ={@Content()})
     })
     @PostMapping(value = "groups/create", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @Transactional
+    @Modifying
     public ResponseEntity<?> createGroup(@Parameter(description = "Matches the GroupRequest object representing the group to be created. This will be fully validated.", required = true) GroupRequest request) {
+        if (!request.isValid()) {
+            throw new IllegalArgumentException("Not a valid group object");
+        };
         Group group = new Group();
         group.setName(request.getName());
         group.setContests(contestService.loadContestsFromIdList(request.getContests()));
@@ -423,6 +449,7 @@ public class AdminController {
             @ApiResponse(responseCode="404", description="Indicates that the group does not exist", content ={@Content()})
     })
     @GetMapping(value = "groups/{groupId}/users", consumes = MediaType.ALL_VALUE)
+    @Transactional
     public ResponseEntity<?> getGroupUsers(@Parameter(description = "Id of a fetched group") @PathVariable Integer groupId) {
         Group group = groupRepository.findById(groupId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find group with id " + groupId));
@@ -438,6 +465,8 @@ public class AdminController {
             @ApiResponse(responseCode="404", description="Indicates that the group or user does not exist", content ={@Content()})
     })
     @PostMapping(value = "groups/{groupId}/users/add", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @Transactional
+    @Modifying
     public ResponseEntity<?> addUserToGroup(@Parameter(description = "Id of a group to which user will be added") @PathVariable Integer groupId,
                                             @Parameter(description = "Username of the user that will be added to group") @RequestParam String username) {
         Group group = groupRepository.findById(groupId).orElseThrow(() ->
@@ -465,6 +494,8 @@ public class AdminController {
             @ApiResponse(responseCode="404", description="Indicates that the group or user does not exist", content ={@Content()})
     })
     @PostMapping(value = "groups/{groupId}/users/remove", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @Transactional
+    @Modifying
     public ResponseEntity<?> removeUserFromGroup(@Parameter(description = "Id of a group to which user will be removed") @PathVariable Integer groupId,
                                                  @Parameter(description = "Username of the user that will be removed from the group") @RequestParam String username) {
         Group group = groupRepository.findById(groupId).orElseThrow(() ->
@@ -489,6 +520,8 @@ public class AdminController {
             @ApiResponse(responseCode="404", description="Indicates that the group does not exist", content ={@Content()})
     })
     @DeleteMapping(value = "groups/{groupId}", consumes = MediaType.ALL_VALUE)
+    @Transactional
+    @Modifying
     public ResponseEntity<?> deleteGroup(@Parameter(description = "Id of the group to be deleted") @PathVariable Integer groupId) {
         Group group = groupRepository.findById(groupId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find group with id " + groupId));
@@ -506,6 +539,8 @@ public class AdminController {
             @ApiResponse(responseCode="404", description="Indicates that the group does not exist", content ={@Content()})
     })
     @PutMapping(value = "groups/{groupId}/edit", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @Transactional
+    @Modifying
     public ResponseEntity<?> editGroup(@Parameter(description = "Id of the group to be modified") @PathVariable Integer groupId,
                                        @Parameter(description = "Modified group. Specify only the fields you want to modify.") GroupRequest request){
         Group group = groupRepository.findById(groupId).orElseThrow(() ->
