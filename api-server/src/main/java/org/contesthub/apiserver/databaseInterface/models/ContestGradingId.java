@@ -35,6 +35,14 @@ public class ContestGradingId implements Serializable {
         this.problemId = problemId;
     }
 
+    public ContestGradingId() {
+    }
+
+    public ContestGradingId(Integer userId, Integer problemId) {
+        this.userId = userId;
+        this.problemId = problemId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

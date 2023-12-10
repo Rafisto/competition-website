@@ -36,8 +36,10 @@ public class UserInfoResponse {
 
     public UserInfoResponse(UserDetailsImpl user){
         this.username = user.getUsername();
-        this.contests = user.getUser().getContests().stream().map(ContestDto::new).collect(Collectors.toSet());
-        this.groups = user.getUser().getGroups().stream().map(GroupDto::new).collect(Collectors.toSet());
+        this.contests = user.getUser().getContests().stream().map(contest ->
+                new ContestDto(contest.getId(), contest.getTitle(), contest.getDescription(), contest.getIsPublished())
+        ).collect(Collectors.toSet());
+        this.groups = user.getUser().getGroups().stream().map(group -> new GroupDto(group.getId(), group.getName())).collect(Collectors.toSet());
     }
 
     // Getters and setters

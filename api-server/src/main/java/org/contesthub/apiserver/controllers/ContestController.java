@@ -70,7 +70,11 @@ public class ContestController {
     @GetMapping("list")
     public ResponseEntity<?> getContests(@Parameter(description = "Whether to list contests the user has joined or not") @RequestParam(defaultValue = "true") Boolean joined) {
         List<Contest> contests = contestRepository.findByIsPublishedTrue();
-        List<ContestDto> contestResponse = contests.stream().map(ContestDto::new).toList();
+        // Maybe introduce a new DTO for this instead of using generic ContestDto?
+        // Mainly due to Schema containing non-existent fields now
+        List<ContestDto> contestResponse = contests.stream().map(contest -> new ContestDto(
+                contest.getId(), contest.getTitle(), contest.getDescription(), contest.getIsPublished()
+        )).toList();
         return ResponseEntity.ok(contestResponse);
     }
 
@@ -89,7 +93,13 @@ public class ContestController {
     public ResponseEntity<?> getUserContestList(Principal principal) {
         JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
         UserDetails user = userDetailsService.loadUserByToken(token);
-        List<ContestDto> contests = contestRepository.findByUsersContainsAndIsPublishedTrue(userRepository.findByUsername(user.getUsername()).orElseThrow(null)).stream().map(ContestDto::new).toList();
+        List<ContestDto> contests = contestRepository.findByUsersContainsAndIsPublishedTrue(
+                userRepository.findByUsername(user.getUsername()).orElseThrow(null)).stream()
+                .map(contest -> new ContestDto(contest.getId(), contest.getTitle(), contest.getDescription(), contest.getIsPublished()
+        )).toList();
+        if (contests.isEmpty()) {
+            throw new EntityNotFoundException("You're not participating in any contests");
+        }
         return ResponseEntity.ok(contests);
     }
 
@@ -160,10 +170,13 @@ public class ContestController {
     public ResponseEntity<?> getContestProblems(Principal principal,
                                                 @Parameter(description = "Id of a contest for which the problems will be returned") @PathVariable Integer contestId) {
         UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);
-        Set<ContestProblem> contestProblems = contestService.loadContestsUserCanJoin(userDetails).stream()
-                .filter(contest -> contest.getId().equals(contestId)).findFirst().orElseThrow(
+        // Possibly add a DTO for this?
+        List<ContestProblemDto> contestProblems = contestRepository.findByIdAndUsersContainsAndIsPublishedTrue(contestId, userDetails.getUser())
+                .orElseThrow(
                         () -> new EntityNotFoundException("Contest Not found")
-                ).getContestProblems();
+                ).getContestProblems().stream().map(contestProblem ->
+                        new ContestProblemDto(contestProblem.getId(), contestProblem.getTitle(), contestProblem.getContents(), contestProblem.getUseAutograding(), contestProblem.getUseAutogradingAnswer(), contestProblem.getDeadline())
+                ).toList();
         return ResponseEntity.ok(contestProblems);
     }
 }
