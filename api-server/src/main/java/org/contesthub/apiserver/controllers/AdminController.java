@@ -9,18 +9,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import org.contesthub.apiserver.databaseInterface.DTOs.ContestDto;
-import org.contesthub.apiserver.databaseInterface.DTOs.ContestProblemDto;
-import org.contesthub.apiserver.databaseInterface.DTOs.GroupDto;
-import org.contesthub.apiserver.databaseInterface.DTOs.UserDto;
-import org.contesthub.apiserver.databaseInterface.models.Contest;
-import org.contesthub.apiserver.databaseInterface.models.ContestProblem;
-import org.contesthub.apiserver.databaseInterface.models.Group;
-import org.contesthub.apiserver.databaseInterface.models.User;
-import org.contesthub.apiserver.databaseInterface.repositories.ContestProblemRepository;
-import org.contesthub.apiserver.databaseInterface.repositories.ContestRepository;
-import org.contesthub.apiserver.databaseInterface.repositories.GroupRepository;
-import org.contesthub.apiserver.databaseInterface.repositories.UserRepository;
+import org.contesthub.apiserver.databaseInterface.DTOs.*;
+import org.contesthub.apiserver.databaseInterface.models.*;
+import org.contesthub.apiserver.databaseInterface.repositories.*;
 import org.contesthub.apiserver.models.requests.ContestRequest;
 import org.contesthub.apiserver.models.requests.ContestProblemRequest;
 import org.contesthub.apiserver.models.requests.GroupRequest;
@@ -29,6 +20,7 @@ import org.contesthub.apiserver.services.GroupService;
 import org.contesthub.apiserver.services.UserDetailsImpl;
 import org.contesthub.apiserver.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.parsing.Problem;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -66,6 +58,9 @@ public class AdminController {
 
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    private ContestGradingRepository contestGradingRepository;
 
     /***
      * This endpoint lets the admin create a new contest
@@ -559,5 +554,45 @@ public class AdminController {
         }
         groupRepository.saveAndFlush(group);
         return ResponseEntity.ok(new GroupDto(group));
+    }
+
+    @Operation(summary="Get all submissions for a problem")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode="200", description="List of submissions for a problem", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = ContestGradingDto.class))
+                    }),
+            @ApiResponse(responseCode="404", description="Indicates that the problem does not exist", content ={@Content()})
+    })
+    @GetMapping(value = "problems/{problemId}/submissions", consumes = MediaType.ALL_VALUE)
+    @Transactional
+    public ResponseEntity<?> getProblemSubmissions(@Parameter(description = "Id of a problem to inspect") @PathVariable Integer problemId) {
+        Set<ContestGradingDto> submissions = contestGradingRepository.findByProblem(contestProblemRepository.findById(problemId)
+                .orElseThrow(() -> new EntityNotFoundException("Could not find contest problem with id " + problemId)))
+                .stream().map(ContestGradingDto::new).collect(Collectors.toSet());
+        if (submissions.isEmpty()) {
+            throw new EntityNotFoundException("No submissions found for problem with id " + problemId);
+        }
+        return ResponseEntity.ok(submissions);
+    }
+
+    @Operation(summary="Get all submissions for a user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode="200", description="List of submissions for a user", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = ContestGradingDto.class))
+                    }),
+            @ApiResponse(responseCode="404", description="Indicates that the user does not exist", content ={@Content()})
+    })
+    @GetMapping(value = "users/{username}/submissions", consumes = MediaType.ALL_VALUE)
+    @Transactional
+    public ResponseEntity<?> getUserProblemSubmissions(@Parameter(description = "Username of a user to inspect") @PathVariable String username) {
+        UserDetailsImpl userDetails = userService.loadUserByUsername(username);
+        Set<ContestGradingDto> submissions = contestGradingRepository.findByUser(userDetails.getUser())
+                .stream().map(ContestGradingDto::new).collect(Collectors.toSet());
+        if (submissions.isEmpty()) {
+            throw new EntityNotFoundException("No submissions found for user with username " + username);
+        }
+        return ResponseEntity.ok(submissions);
     }
 }

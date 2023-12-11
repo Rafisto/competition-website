@@ -52,7 +52,7 @@ public class ProblemsController {
     @Autowired
     private UserRepository userRepository;
 
-    private Logger logger = LoggerFactory.getLogger(ProblemsController.class);
+    private final Logger logger = LoggerFactory.getLogger(ProblemsController.class);
 
     @Operation(summary = "Submit solution to a problem")
     @ApiResponses(value = {
@@ -86,6 +86,7 @@ public class ProblemsController {
 
         // Refreshes the submission object and returns it
         // TODO: submittedAt: null - JSON
+        // TODO: auto-grading
         ContestGradingDto contestGradingResponse = new ContestGradingDto(
                 contestGradingRepository.findByUserAndProblem(userDetails.getUser(), matchingProblem));
         return ResponseEntity.ok(contestGradingResponse);
