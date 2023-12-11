@@ -101,8 +101,10 @@ services:
       - PORT=80
       - API_URL=http://backend:8080
       - KEYCLOAK_URL=http://keycloak:8080
+      - CDN_URL=http://cdn:8080
       - API_SUBDOMAIN=api
       - AUTH_SUBDOMAIN=auth
+      - CDN_SUBDOMAIN=cdn
     depends_on:
       - backend
       - keycloak
