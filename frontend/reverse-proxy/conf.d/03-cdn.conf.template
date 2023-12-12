@@ -1,6 +1,6 @@
 server {
     listen 80;
-    server_name *.cdn.localhost;
+    server_name *.${CDN_SUBDOMAIN}.${DOMAIN} ${CDN_SUBDOMAIN}.${DOMAIN};
 
     location / {
         proxy_pass ${CDN_URL};

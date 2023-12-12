@@ -56,10 +56,6 @@ services:
   backend:
     build: 
       context: ./api-server
-    volumes:
-      - type: bind
-        source: ./docs
-        target: /app/docs
     environment:
       - KEYCLOAK_INTERNAL_URL=http://keycloak:8080/
       - KEYCLOAK_REALM=CompetitionManager
@@ -90,6 +86,21 @@ services:
      - backend
     networks:
       - frontend
+
+  cdn:
+    build:
+      context: ./upload-server
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+      - POSTGRES_HOST=database
+    restart: on-failure
+    depends_on:
+      - database
+    networks:
+      - frontend
+      - backend
 
   frontend:
     build: 
