@@ -73,7 +73,11 @@ public class ProblemsController {
                                             @PathVariable Integer problemId) {
         UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);
         ContestProblem matchingProblem = contestProblemService.findMatchingProblem(userDetails.getUser(), problemId);
-        // TODO: check for deadline
+
+        if (Instant.now().isAfter(matchingProblem.getDeadline())) {
+            throw new IllegalArgumentException("Deadline has passed");
+        }
+
         if (isFile == null) {
             isFile = Boolean.FALSE;
         }
@@ -109,7 +113,11 @@ public class ProblemsController {
                                             @PathVariable Integer problemId) {
         UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);
         ContestProblem matchingProblem = contestProblemService.findMatchingProblem(userDetails.getUser(), problemId);
-        // TODO: check for deadline
+
+        if (Instant.now().isAfter(matchingProblem.getDeadline())) {
+            throw new IllegalArgumentException("Deadline has passed");
+        }
+
         if (isFile == null) {
             isFile = Boolean.FALSE;
         }
