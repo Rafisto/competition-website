@@ -595,4 +595,50 @@ public class AdminController {
         }
         return ResponseEntity.ok(submissions);
     }
+
+    @GetMapping(value = "user/{username}/contests/{contestId}/submissions", consumes = MediaType.ALL_VALUE)
+    public ResponseEntity<?> getUsersSubmissionInContest(@Parameter(description = "Username of user to inspect") @PathVariable String username,
+                                                         @Parameter(description = "Id of contest to inspect") @PathVariable Integer contestId) {
+        UserDetailsImpl userDetails = userService.loadUserByUsername(username);
+        Set<ContestGradingDto> submissions = contestGradingRepository.findByProblem_Contest_IdAndUser(contestId, userDetails.getUser())
+                .stream().map(ContestGradingDto::new).collect(Collectors.toSet());
+        if (submissions.isEmpty()) {
+            throw new EntityNotFoundException("No submissions found for user with username " + username + " in contest with id " + contestId);
+        }
+        return ResponseEntity.ok(submissions);
+    }
+
+    @GetMapping(value = "problems/{problemId}/submissions", consumes = MediaType.ALL_VALUE)
+    public ResponseEntity<?> getSubmissionsInProblem(@Parameter(description = "Id of problem to inspect") @PathVariable Integer problemId) {
+        Set<ContestGradingDto> submissions = contestGradingRepository.findByProblem_Id(problemId)
+                .stream().map(ContestGradingDto::new).collect(Collectors.toSet());
+        if (submissions.isEmpty()) {
+            throw new EntityNotFoundException("No submissions found for problem with id " + problemId);
+        }
+        return ResponseEntity.ok(submissions);
+    }
+
+    @GetMapping(value = "problems/{problemId}/submissions/{username}", consumes = MediaType.ALL_VALUE)
+    public ResponseEntity<?> getSubmissionInProblem(@Parameter(description = "Id of problem to inspect") @PathVariable Integer problemId,
+                                                    @Parameter(description = "Username of user to inspect") @PathVariable String username) {
+        UserDetailsImpl userDetails = userService.loadUserByUsername(username);
+        ContestGradingDto submission = new ContestGradingDto(contestGradingRepository.findByProblem_IdAndUser(problemId, userDetails.getUser())
+                        .orElseThrow(() -> new EntityNotFoundException("No submissions found for user with username " + username + " in problem with id " + problemId)));
+        submission.resolveFile(userDetails, problemId);
+        return ResponseEntity.ok(submission);
+    }
+
+    @PostMapping(value = "problems/{problemId}/submissions/{username}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @Transactional
+    @Modifying
+    public ResponseEntity<?> scoreSubmissionInProblem(@Parameter(description = "Id of problem to inspect") @PathVariable Integer problemId,
+                                                      @Parameter(description = "Username of user to inspect") @PathVariable String username,
+                                                      @Parameter(description = "Score of submission") @RequestParam Integer score) {
+        UserDetailsImpl userDetails = userService.loadUserByUsername(username);
+        ContestGrading contestGrading = contestGradingRepository.findByProblem_IdAndUser(problemId, userDetails.getUser())
+                .orElseThrow(() -> new EntityNotFoundException("No submissions found for user with username " + username + " in problem with id " + problemId));
+        contestGrading.setScore(score);
+        contestGradingRepository.saveAndFlush(contestGrading);
+        return ResponseEntity.ok(new ContestGradingDto(contestGrading));
+    }
 }
