@@ -10,6 +10,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletResponse;
 import org.contesthub.apiserver.databaseInterface.DTOs.LeaderboardDto;
 import org.contesthub.apiserver.databaseInterface.DTOs.UserDto;
+import org.contesthub.apiserver.databaseInterface.DTOs.ContestGradingDto;
 import org.contesthub.apiserver.databaseInterface.repositories.ContestGradingRepository;
 import org.contesthub.apiserver.databaseInterface.repositories.ContestRepository;
 import org.contesthub.apiserver.models.response.UserInfoResponse;
@@ -118,5 +119,17 @@ public class BaseController {
     public ResponseEntity<?> getTokenDetailsAdmin(Principal principal) {
         JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
         return ResponseEntity.ok(token.getTokenAttributes());
+    }
+
+    @GetMapping("/submissions/history")
+    public ResponseEntity<?> getSubmissionHistory(Principal principal) {
+        UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);
+        return ResponseEntity.ok(contestGradingRepository.findByUser(userDetails.getUser()).stream().map(ContestGradingDto::new));
+    }
+
+    @GetMapping("/submissions")
+    public ResponseEntity<?> getActiveSubmissions(Principal principal) {
+        UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);
+        return ResponseEntity.ok(contestGradingRepository.findByUserAndProblem_DeadlineAfter(userDetails.getUser(), java.time.Instant.now()).stream().map(ContestGradingDto::new));
     }
 }

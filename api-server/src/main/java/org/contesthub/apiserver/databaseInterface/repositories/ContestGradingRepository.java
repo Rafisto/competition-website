@@ -13,6 +13,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
@@ -35,4 +36,6 @@ public interface ContestGradingRepository extends JpaRepository<ContestGrading, 
 
     @Transactional
     Set<ContestGrading> findByUser(User user);
+
+    Set<ContestGrading> findByUserAndProblem_DeadlineAfter(User user, Instant deadline);
 }

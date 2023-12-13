@@ -8,14 +8,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.persistence.EntityNotFoundException;
 import org.apache.coyote.Response;
-import org.contesthub.apiserver.databaseInterface.DTOs.ContestDto;
-import org.contesthub.apiserver.databaseInterface.DTOs.ContestProblemDto;
-import org.contesthub.apiserver.databaseInterface.DTOs.GroupDto;
-import org.contesthub.apiserver.databaseInterface.DTOs.LeaderboardDto;
-import org.contesthub.apiserver.databaseInterface.models.Contest;
-import org.contesthub.apiserver.databaseInterface.models.ContestProblem;
-import org.contesthub.apiserver.databaseInterface.models.Group;
-import org.contesthub.apiserver.databaseInterface.models.User;
+import org.contesthub.apiserver.databaseInterface.DTOs.*;
+import org.contesthub.apiserver.databaseInterface.models.*;
 import org.contesthub.apiserver.databaseInterface.repositories.ContestGradingRepository;
 import org.contesthub.apiserver.databaseInterface.repositories.ContestRepository;
 import org.contesthub.apiserver.databaseInterface.repositories.GroupRepository;
@@ -178,5 +172,34 @@ public class ContestController {
                         new ContestProblemDto(contestProblem.getId(), contestProblem.getTitle(), contestProblem.getContents(), contestProblem.getUseAutograding(), contestProblem.getUseAutogradingAnswer(), contestProblem.getDeadline())
                 ).toList();
         return ResponseEntity.ok(contestProblems);
+    }
+
+    @GetMapping("{contestId}/submissions")
+    public ResponseEntity<?> getContestSubmissions(Principal principal,
+                                                   @Parameter(description = "Id of a contest for which the submissions will be returned") @PathVariable Integer contestId) {
+        UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);
+        // Possibly add a DTO for this?
+        Set<ContestProblem> contestProblems = contestRepository.findByIdAndUsersContainsAndIsPublishedTrue(contestId, userDetails.getUser())
+                .orElseThrow(
+                        () -> new EntityNotFoundException("Contest Not found")
+                ).getContestProblems();
+
+        List<ContestGrading> contestGradings = contestProblems.stream().map(ContestProblem::getContestGradings).reduce(new LinkedHashSet<ContestGrading>(), (reducedSet, newSet) -> {
+            reducedSet.addAll(newSet);
+            return reducedSet;
+        }).stream().filter(contestGrading -> contestGrading.getUser().equals(userDetails.getUser())).toList();
+        return ResponseEntity.ok(contestGradings.stream().map(ContestGradingDto::new).toList());
+    }
+
+    @GetMapping("{contestId}/score")
+    public ResponseEntity<?> getContestScore(Principal principal, @Parameter(description = "Id of a contest for which the score will be returned") @PathVariable Integer contestId) {
+        UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);
+        // Possibly add a DTO for this?
+        Object[][] leaderboardMatrix = contestGradingRepository.getLeaderboardByContestId(contestId);
+        Set<LeaderboardDto> leaderboard = new LinkedHashSet<>();
+        for(Object[] row : leaderboardMatrix) {
+            leaderboard.add(new LeaderboardDto((String) row[0], Math.toIntExact((Long) row[1])));
+        }
+        return ResponseEntity.ok(leaderboard.stream().filter(leaderboardDto -> leaderboardDto.getUsername().equals(userDetails.getUser().getUsername())).findFirst().orElseThrow(() -> new EntityNotFoundException("Contest Not found")));
     }
 }
