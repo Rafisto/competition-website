@@ -1,6 +1,7 @@
 package org.contesthub.apiserver.databaseInterface.DTOs;
 
 import org.contesthub.apiserver.databaseInterface.models.ContestGrading;
+import org.contesthub.apiserver.services.UserDetailsImpl;
 
 import java.io.Serializable;
 import java.time.Instant;
@@ -13,9 +14,27 @@ public class ContestGradingDto implements Serializable {
     private Integer score;
     private UserDto user;
     private Instant submittedAt;
+    private Instant lastUpdatedAt;
     private String answer;
+    private Boolean isFile;
 
     public ContestGradingDto() {
+    }
+
+    public void resolveFile(UserDetailsImpl userDetails, ContestProblemDto matchingProblem) {
+        if (this.getIsFile()) {
+            this.setAnswer("/files/" + userDetails.getUser().getUsername() +
+                    "/" + matchingProblem.getId() +
+                    "/" + this.getAnswer());
+        }
+    }
+
+    public void resolveFile(UserDetailsImpl userDetails, Integer matchingProblemId) {
+        if (this.getIsFile()) {
+            this.setAnswer("/files/" + userDetails.getUser().getUsername() +
+                    "/" + matchingProblemId +
+                    "/" + this.getAnswer());
+        }
     }
 
     public ContestGradingDto(ContestGrading contestGrading) {
@@ -28,7 +47,9 @@ public class ContestGradingDto implements Serializable {
                                              contestGrading.getProblem().getDeadline());
         this.user = new UserDto(contestGrading.getUser().getId(), contestGrading.getUser().getUsername(), contestGrading.getUser().getEmail());
         this.answer = contestGrading.getAnswer();
+        this.isFile = contestGrading.getIsFile();
         this.submittedAt = contestGrading.getSubmittedAt();
+        this.lastUpdatedAt = contestGrading.getLastUpdatedAt();
     }
 
     public ContestGradingDto(Integer score, UserDto user) {
@@ -87,5 +108,22 @@ public class ContestGradingDto implements Serializable {
 
     public void setAnswer(String answer) {
         this.answer = answer;
+    }
+
+    public Instant getLastUpdatedAt() {
+        return lastUpdatedAt;
+    }
+
+    public ContestGradingDto setLastUpdatedAt(Instant lastUpdatedAt) {
+        this.lastUpdatedAt = lastUpdatedAt;
+        return this;
+    }
+
+    public Boolean getIsFile() {
+        return isFile;
+    }
+
+    public void setIsFile(Boolean file) {
+        isFile = file;
     }
 }

@@ -7,6 +7,7 @@ import org.contesthub.apiserver.databaseInterface.models.ContestGrading;
 import org.contesthub.apiserver.databaseInterface.models.ContestGradingId;
 import org.contesthub.apiserver.databaseInterface.models.ContestProblem;
 import org.contesthub.apiserver.databaseInterface.models.User;
+import org.springframework.beans.PropertyValues;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -15,9 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface ContestGradingRepository extends JpaRepository<ContestGrading, ContestGradingId>, JpaSpecificationExecutor<ContestGrading> {
+    List<ContestGrading> findByProblem_Contest_IdAndUser(Integer id, User user);
     @Transactional
     ContestGrading findByUserAndProblem(User user, ContestProblem problem);
 
@@ -38,4 +41,8 @@ public interface ContestGradingRepository extends JpaRepository<ContestGrading, 
     Set<ContestGrading> findByUser(User user);
 
     Set<ContestGrading> findByUserAndProblem_DeadlineAfter(User user, Instant deadline);
+
+    Set<ContestGrading> findByProblem_Id(Integer problemId);
+
+    Optional<ContestGrading> findByProblem_IdAndUser(Integer problemId, User user);
 }

@@ -30,16 +30,23 @@ public class ContestGrading {
     @Column(name = "answer")
     private String answer;
 
+    @Column(name = "is_file")
+    private Boolean isFile;
+
     @Column(name = "submittedAt")
     private Instant submittedAt;
+
+    @Column(name = "last_updated_at")
+    private Instant lastUpdatedAt;
 
     public ContestGrading() {
     }
 
-    public ContestGrading(User user, ContestProblem problem, String answer) {
+    public ContestGrading(User user, ContestProblem problem, String answer, Boolean isFile) {
         this.user = user;
         this.problem = problem;
         this.answer = answer;
+        this.isFile = isFile;
     }
 
     public ContestGradingId getId() {
@@ -88,5 +95,21 @@ public class ContestGrading {
 
     public void setSubmittedAt(Instant submittedAt) {
         this.submittedAt = submittedAt;
+    }
+
+    public Boolean getIsFile() {
+        return isFile;
+    }
+
+    public void setIsFile(Boolean file) {
+        isFile = file;
+    }
+
+    public Instant getLastUpdatedAt() {
+        return lastUpdatedAt;
+    }
+
+    public void setLastUpdatedAt(Instant lastUpdatedAt) {
+        this.lastUpdatedAt = lastUpdatedAt;
     }
 }

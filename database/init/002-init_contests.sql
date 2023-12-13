@@ -44,8 +44,10 @@ CREATE TABLE contest_grading (
     user_id INT,
     problem_id INT,
     answer TEXT NOT NULL,
+    is_file BOOLEAN DEFAULT FALSE,
     submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     score INT,
+    last_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     PRIMARY KEY (user_id, problem_id),
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (problem_id) REFERENCES contest_problems(id)
