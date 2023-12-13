@@ -73,7 +73,7 @@ public class ProblemsController {
                                             @PathVariable Integer problemId) {
         UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);
         ContestProblem matchingProblem = contestProblemService.findMatchingProblem(userDetails.getUser(), problemId);
-
+        // TODO: check for deadline
         if (isFile == null) {
             isFile = Boolean.FALSE;
         }
@@ -86,7 +86,8 @@ public class ProblemsController {
 
         // TODO: auto-grading
         ContestGradingDto contestGradingResponse = new ContestGradingDto(
-                contestGradingRepository.findByUserAndProblem(userDetails.getUser(), matchingProblem));
+                contestGradingRepository.findByUserAndProblem(userDetails.getUser(), matchingProblem).
+                        orElseThrow(() -> new EntityNotFoundException("Could not find submission")));
         contestGradingResponse.resolveFile(userDetails, contestGradingResponse.getProblem());
         return ResponseEntity.ok(contestGradingResponse);
     }
@@ -97,7 +98,7 @@ public class ProblemsController {
                     mediaType = "application/json",
                     schema = @Schema(implementation = ContestGradingDto.class)
             )}),
-            @ApiResponse(responseCode = "404", description = "Indicates unknown problem", content = {@Content()})
+            @ApiResponse(responseCode = "404", description = "Indicates unknown problem or submission", content = {@Content()})
     })
     @PutMapping(value="{problemId}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @Transactional
@@ -108,7 +109,7 @@ public class ProblemsController {
                                             @PathVariable Integer problemId) {
         UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);
         ContestProblem matchingProblem = contestProblemService.findMatchingProblem(userDetails.getUser(), problemId);
-
+        // TODO: check for deadline
         if (isFile == null) {
             isFile = Boolean.FALSE;
         }
@@ -122,17 +123,28 @@ public class ProblemsController {
 
         // TODO: auto-grading
         ContestGradingDto contestGradingResponse = new ContestGradingDto(
-                contestGradingRepository.findByUserAndProblem(userDetails.getUser(), matchingProblem));
+                contestGradingRepository.findByUserAndProblem(userDetails.getUser(), matchingProblem)
+                .orElseThrow(() -> new EntityNotFoundException("Could not find submission")));
         contestGradingResponse.resolveFile(userDetails, contestGradingResponse.getProblem());
         return ResponseEntity.ok(contestGradingResponse);
     }
 
+    @Operation(summary = "Get users solution for given problem")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Indicates successful submission", content = {@Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ContestGradingDto.class)
+            )}),
+            @ApiResponse(responseCode = "404", description = "Indicates unknown problem or submission", content = {@Content()})
+    })
     @GetMapping(value="{problemId}")
     @Transactional
-    public ResponseEntity<?> getProblem(Principal principal, @PathVariable Integer problemId) {
+    public ResponseEntity<?> getProblemSubmission(Principal principal, @PathVariable Integer problemId) {
         UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);
         ContestProblem matchingProblem = contestProblemService.findMatchingProblem(userDetails.getUser(), problemId);
-        ContestGradingDto contestGradingResponse = new ContestGradingDto(contestGradingRepository.findByUserAndProblem(userDetails.getUser(), matchingProblem));
+        ContestGradingDto contestGradingResponse = new ContestGradingDto(
+                contestGradingRepository.findByUserAndProblem(userDetails.getUser(), matchingProblem)
+                .orElseThrow(() -> new EntityNotFoundException("Could not find submission")));
         contestGradingResponse.resolveFile(userDetails, matchingProblem.getId());
         return ResponseEntity.ok(contestGradingResponse);
     }

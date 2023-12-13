@@ -41,13 +41,13 @@
     - [x] Leaderboard is sorted by score
     - [x] There is a leaderboard for each contest (visible only to participants) ("/contest/{contestId}/leaderboard")
     - [x] There is a global leaderboard (visible to everyone) ("/leaderboard")
-- [ ] User Profiles: Competitors can view their submission history and stats.
+- [x] User Profiles: Competitors can view their submission history and stats.
     - [x] Users can view their profile (/profile)
     - [x] Users can view other users' profiles (/users/{username})
     - [x] Users can view their submission history for a contest (participating) (/contests/{contestId}/submissions/history)
     - [x] Users can view their overall submission history (all contests) (/submissions/history)
     - [x] Users can view all their active submissions (participating) (/submissions)
-    - [ ] Users can view a specific submission (with a score) (/problems/{problemId})
+    - [x] Users can view theirs specific submission (with a score) (/problems/{problemId})
     - [x] Users can view their score for a contest (/contests/{contestId}/score)
     - [x] Admins can view a user's submission history for a contest (/admin/users/{username}/contests/{contestId}/submissions/history)
     - [x] Admins can view a user's overall submission history (/admin/users/{username}/submissions)

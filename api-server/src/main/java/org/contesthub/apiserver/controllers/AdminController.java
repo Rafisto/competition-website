@@ -101,7 +101,10 @@ public class AdminController {
      *                This means that it won't be fully validated, each field will be validated individually instead.
      * @return The edited contest object
      */
-    @Operation(summary="Edit an existing contest")
+    @Operation(summary="Edit an existing contest", description = """
+         Body matches the ContestRequest object representing the contest to be edited. At least one of the fields must be provided.
+         Can contain any of the fields in the ContestRequest object, none of them is required.
+         This means that it won't be fully validated, each field will be validated individually instead.""")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "The edited contest object", content =
                 {
@@ -113,11 +116,7 @@ public class AdminController {
     @Transactional
     @Modifying
     public ResponseEntity<?> editContest(@Parameter(description = "Id of the contest to be edited") @PathVariable Integer contestId,
-                                         @Parameter(description = """
-                                                     Matches the ContestRequest object representing the contest to be edited. At least one of the fields must be provided.
-                                                     Can contain any of the fields in the ContestRequest object, none of them is required.
-                                                     This means that it won't be fully validated, each field will be validated individually instead.
-                                                     """) ContestRequest request) {
+                                         @Parameter(description = "Partially matches ContestRequest") ContestRequest request) {
         // TODO: custom body indicating that the contest might not exist
         Contest contest = contestRepository.findById(contestId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find contest with id " + contestId));
@@ -303,7 +302,10 @@ public class AdminController {
      *                This means that it won't be fully validated, each field will be validated individually instead.
      * @return The edited contest object
      */
-    @Operation(summary="Edit an existing problem statement")
+    @Operation(summary="Edit an existing problem statement", description = """
+            Body matches the ContestProblemRequest object representing the contest to be edited. At least one of the fields must be provided.
+            Can contain any of the fields in the ContestProblemRequest object, none of them is required.
+            This means that it won't be fully validated, each field will be validated individually instead.""")
     @ApiResponses(value = {
             @ApiResponse(responseCode="200", description="The edited contest problem object", content =
                     {
@@ -316,11 +318,7 @@ public class AdminController {
     @Transactional
     @Modifying
     public ResponseEntity<?> editContestProblem(@Parameter(description = "Id of a problem statement to be edited") @PathVariable Integer problemId,
-                                                @Parameter(description = """
-                                                            Matches the ContestProblemRequest object representing the contest to be edited. At least one of the fields must be provided.
-                                                            Can contain any of the fields in the ContestProblemRequest object, none of them is required.
-                                                            This means that it won't be fully validated, each field will be validated individually instead.
-                                                            """) ContestProblemRequest request){
+                                                @Parameter(description = "Partially matches ContestProblemRequest") ContestProblemRequest request){
         // TODO: custom body indicating that the problem statement might not exist
         ContestProblem contestProblem = contestProblemRepository.findById(problemId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find contest problem with id " + problemId));
@@ -596,7 +594,16 @@ public class AdminController {
         return ResponseEntity.ok(submissions);
     }
 
+    @Operation(summary="Get all submissions for a user in a contest")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode="200", description="List of submissions for a user in a contest", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = ContestGradingDto.class))
+                    }),
+            @ApiResponse(responseCode="404", description="Indicates that the user or contest does not exist or there are no submissions", content ={@Content()})
+    })
     @GetMapping(value = "user/{username}/contests/{contestId}/submissions", consumes = MediaType.ALL_VALUE)
+    @Transactional
     public ResponseEntity<?> getUsersSubmissionInContest(@Parameter(description = "Username of user to inspect") @PathVariable String username,
                                                          @Parameter(description = "Id of contest to inspect") @PathVariable Integer contestId) {
         UserDetailsImpl userDetails = userService.loadUserByUsername(username);
@@ -608,7 +615,16 @@ public class AdminController {
         return ResponseEntity.ok(submissions);
     }
 
+    @Operation(summary="Get all submissions for a problem")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode="200", description="List of submissions for a problem", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = ContestGradingDto.class))
+                    }),
+            @ApiResponse(responseCode="404", description="Indicates that the problem does not exist or has no submissions", content ={@Content()})
+    })
     @GetMapping(value = "problems/{problemId}/submissions", consumes = MediaType.ALL_VALUE)
+    @Transactional
     public ResponseEntity<?> getSubmissionsInProblem(@Parameter(description = "Id of problem to inspect") @PathVariable Integer problemId) {
         Set<ContestGradingDto> submissions = contestGradingRepository.findByProblem_Id(problemId)
                 .stream().map(ContestGradingDto::new).collect(Collectors.toSet());
@@ -618,7 +634,16 @@ public class AdminController {
         return ResponseEntity.ok(submissions);
     }
 
+    @Operation(summary="Get a specific submission")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode="200", description="The requested submission object", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = ContestGradingDto.class))
+                    }),
+            @ApiResponse(responseCode="404", description="Indicates that the submission does not exist", content ={@Content()})
+    })
     @GetMapping(value = "problems/{problemId}/submissions/{username}", consumes = MediaType.ALL_VALUE)
+    @Transactional
     public ResponseEntity<?> getSubmissionInProblem(@Parameter(description = "Id of problem to inspect") @PathVariable Integer problemId,
                                                     @Parameter(description = "Username of user to inspect") @PathVariable String username) {
         UserDetailsImpl userDetails = userService.loadUserByUsername(username);
@@ -628,6 +653,14 @@ public class AdminController {
         return ResponseEntity.ok(submission);
     }
 
+    @Operation(summary="Score a submission")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode="200", description="The edited submission object", content =
+                    {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = ContestGradingDto.class))
+                    }),
+            @ApiResponse(responseCode="404", description="Indicates that the submission does not exist", content ={@Content()})
+    })
     @PostMapping(value = "problems/{problemId}/submissions/{username}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @Transactional
     @Modifying

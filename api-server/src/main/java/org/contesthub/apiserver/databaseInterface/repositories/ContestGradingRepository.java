@@ -20,9 +20,7 @@ import java.util.Optional;
 import java.util.Set;
 
 public interface ContestGradingRepository extends JpaRepository<ContestGrading, ContestGradingId>, JpaSpecificationExecutor<ContestGrading> {
-    List<ContestGrading> findByProblem_Contest_IdAndUser(Integer id, User user);
-    @Transactional
-    ContestGrading findByUserAndProblem(User user, ContestProblem problem);
+
 
     @Transactional
     @Query(value="SELECT u.username, COALESCE(SUM(cg.score), 0) AS score FROM users u LEFT JOIN contest_grading cg ON u.id = cg.user_id GROUP BY u.id ORDER BY score DESC",
@@ -44,5 +42,10 @@ public interface ContestGradingRepository extends JpaRepository<ContestGrading, 
 
     Set<ContestGrading> findByProblem_Id(Integer problemId);
 
+    @Transactional
     Optional<ContestGrading> findByProblem_IdAndUser(Integer problemId, User user);
+    @Transactional
+    Optional<ContestGrading> findByUserAndProblem(User user, ContestProblem problem);
+    @Transactional
+    List<ContestGrading> findByProblem_Contest_IdAndUser(Integer id, User user);
 }

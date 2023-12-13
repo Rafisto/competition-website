@@ -121,12 +121,24 @@ public class BaseController {
         return ResponseEntity.ok(token.getTokenAttributes());
     }
 
+    @Operation(summary = "Get user's submissions", description = "Get user's submissions for all problems")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User's submissions", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = ContestGradingDto.class))
+            })
+    })
     @GetMapping("/submissions/history")
     public ResponseEntity<?> getSubmissionHistory(Principal principal) {
         UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);
         return ResponseEntity.ok(contestGradingRepository.findByUser(userDetails.getUser()).stream().map(ContestGradingDto::new));
     }
 
+    @Operation(summary = "Get user's active submissions", description = "Get user's submissions for all problems that are still open")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User's active submissions", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = ContestGradingDto.class))
+            })
+    })
     @GetMapping("/submissions")
     public ResponseEntity<?> getActiveSubmissions(Principal principal) {
         UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);

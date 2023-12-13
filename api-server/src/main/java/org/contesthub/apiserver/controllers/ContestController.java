@@ -174,6 +174,13 @@ public class ContestController {
         return ResponseEntity.ok(contestProblems);
     }
 
+    @Operation(summary = "Get user's submissions for a contest")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "List of user's submissions for a contest", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = ContestGradingDto.class))
+            }),
+            @ApiResponse(responseCode = "404", description = "Contest not found")
+    })
     @GetMapping("{contestId}/submissions")
     public ResponseEntity<?> getContestSubmissions(Principal principal,
                                                    @Parameter(description = "Id of a contest for which the submissions will be returned") @PathVariable Integer contestId) {
@@ -191,6 +198,13 @@ public class ContestController {
         return ResponseEntity.ok(contestGradings.stream().map(ContestGradingDto::new).toList());
     }
 
+    @Operation(summary = "Get user's score for a contest")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User's score for a contest", content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = LeaderboardDto.class))
+            }),
+            @ApiResponse(responseCode = "404", description = "Contest not found")
+    })
     @GetMapping("{contestId}/score")
     public ResponseEntity<?> getContestScore(Principal principal, @Parameter(description = "Id of a contest for which the score will be returned") @PathVariable Integer contestId) {
         UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);
