@@ -15,6 +15,7 @@ import org.contesthub.apiserver.databaseInterface.repositories.ContestGradingRep
 import org.contesthub.apiserver.databaseInterface.repositories.ContestProblemRepository;
 import org.contesthub.apiserver.databaseInterface.repositories.ContestRepository;
 import org.contesthub.apiserver.databaseInterface.repositories.UserRepository;
+import org.contesthub.apiserver.services.ContestProblemService;
 import org.contesthub.apiserver.services.ContestService;
 import org.contesthub.apiserver.services.UserDetailsImpl;
 import org.contesthub.apiserver.services.UserDetailsServiceImpl;
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.time.Instant;
 import java.util.*;
 
 @RestController
@@ -47,7 +49,7 @@ public class ProblemsController {
     private ContestGradingRepository contestGradingRepository;
 
     @Autowired
-    private ContestProblemRepository contestProblemRepository;
+    private ContestProblemService contestProblemService;
 
     @Autowired
     private UserRepository userRepository;
@@ -62,43 +64,76 @@ public class ProblemsController {
             )}),
             @ApiResponse(responseCode = "404", description = "Indicates unknown problem", content = {@Content()})
     })
-    @PostMapping(value="{problemId}/submit", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @PostMapping(value="{problemId}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @Transactional
     @Modifying
     public ResponseEntity<?> submitSolution(Principal principal,
                                             @RequestParam() String answer,
+                                            @RequestParam(required = false) Boolean isFile,
                                             @PathVariable Integer problemId) {
         UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);
+        ContestProblem matchingProblem = contestProblemService.findMatchingProblem(userDetails.getUser(), problemId);
 
-        // Finds problem with a matching id within the contests the user joined
-        ContestProblem matchingProblem = userDetails.getUser().getContests().stream()
-                .map(Contest::getContestProblems).reduce(new LinkedHashSet<ContestProblem>(), (reducedSet, newSet) -> {
-                    reducedSet.addAll(newSet);
-                    return reducedSet;
-                }).stream().filter(contestProblem -> contestProblem.getId().equals(problemId)).findFirst()
-                .orElseThrow(() -> new EntityNotFoundException("Contest Not found"));
+        if (isFile == null) {
+            isFile = Boolean.FALSE;
+        }
 
         // Creates a new submission
         logger.info("Creating new submission for user {} for problem {} - {}", userDetails.getUser().getUsername(), matchingProblem.getId(), answer);
-        ContestGrading contestGrading = new ContestGrading(userDetails.getUser(), matchingProblem, answer);
+        ContestGrading contestGrading = new ContestGrading(userDetails.getUser(), matchingProblem, answer, isFile);
         contestGrading.setId(new ContestGradingId(userDetails.getUser().getId(), matchingProblem.getId()));
         contestGradingRepository.saveAndFlush(contestGrading);
 
-        // Refreshes the submission object and returns it
-        // TODO: submittedAt: null - JSON
         // TODO: auto-grading
         ContestGradingDto contestGradingResponse = new ContestGradingDto(
                 contestGradingRepository.findByUserAndProblem(userDetails.getUser(), matchingProblem));
+        contestGradingResponse.resolveFile(userDetails, contestGradingResponse.getProblem());
         return ResponseEntity.ok(contestGradingResponse);
     }
 
-    @GetMapping("{problemId}")
-    public ResponseEntity<?> getProblem() {
-        return ResponseEntity.ok("Hello World!");
+    @Operation(summary = "Update solution to a problem")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Indicates successful submission", content = {@Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ContestGradingDto.class)
+            )}),
+            @ApiResponse(responseCode = "404", description = "Indicates unknown problem", content = {@Content()})
+    })
+    @PutMapping(value="{problemId}", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @Transactional
+    @Modifying
+    public ResponseEntity<?> updateSolution(Principal principal,
+                                            @RequestParam() String answer,
+                                            @RequestParam(required = false) Boolean isFile,
+                                            @PathVariable Integer problemId) {
+        UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);
+        ContestProblem matchingProblem = contestProblemService.findMatchingProblem(userDetails.getUser(), problemId);
+
+        if (isFile == null) {
+            isFile = Boolean.FALSE;
+        }
+
+        // Creates a new submission
+        logger.info("Updating submission for user {} for problem {} - {}", userDetails.getUser().getUsername(), matchingProblem.getId(), answer);
+        ContestGrading contestGrading = new ContestGrading(userDetails.getUser(), matchingProblem, answer, isFile);
+        contestGrading.setId(new ContestGradingId(userDetails.getUser().getId(), matchingProblem.getId()));
+        contestGrading.setLastUpdatedAt(Instant.now());
+        contestGradingRepository.saveAndFlush(contestGrading);
+
+        // TODO: auto-grading
+        ContestGradingDto contestGradingResponse = new ContestGradingDto(
+                contestGradingRepository.findByUserAndProblem(userDetails.getUser(), matchingProblem));
+        contestGradingResponse.resolveFile(userDetails, contestGradingResponse.getProblem());
+        return ResponseEntity.ok(contestGradingResponse);
     }
 
-    @PostMapping("{problemId}")
-    public ResponseEntity<?> submitProblemSolution() {
-        return ResponseEntity.ok("Hello World!");
+    @GetMapping(value="{problemId}")
+    @Transactional
+    public ResponseEntity<?> getProblem(Principal principal, @PathVariable Integer problemId) {
+        UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);
+        ContestProblem matchingProblem = contestProblemService.findMatchingProblem(userDetails.getUser(), problemId);
+        ContestGradingDto contestGradingResponse = new ContestGradingDto(contestGradingRepository.findByUserAndProblem(userDetails.getUser(), matchingProblem));
+        contestGradingResponse.resolveFile(userDetails, matchingProblem.getId());
+        return ResponseEntity.ok(contestGradingResponse);
     }
 }

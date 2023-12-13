@@ -28,14 +28,14 @@
     - [x] Admins can view all problem statements for each contest (contest/{contestId}/problems)
     - [x] Admins can view a specific problem statement (/admin/problems/{problemId})
     - [x] Admins can edit problem statements (/admin/problems/{problemId}/edit)
-- [ ] Submission Portal: Competitors can submit their solutions for specific problems within a contest. Submissions are automatically timestamped. **Solutions may require uploading files**
+- [X] Submission Portal: Competitors can submit their solutions for specific problems within a contest. Submissions are automatically timestamped. **Solutions may require uploading files**
     - [x] Users can view problem statements in a contest (participating) (/contests/{contestId}/problems)
-    - [x] Users can submit solutions to problems in a contest (participating) (/problems/{problemId}/submit)
-    - [ ] Users can edit their submissions (/submissions/{submissionId}/edit)
-- [ ] Judging System: Submissions are evaluated based on predefined criteria. Admins can review and assign scores to submissions.
-    - [ ] Admins can view all submissions for a problem statement (/admin/problems/{problemId}/submissions)
-    - [ ] Admins can view a specific submission (/admin/submissions/{submissionId})
-    - [ ] Admins can assign a score to a submission (/admin/submissions/{submissionId}/score)
+    - [x] Users can submit solutions to problems in a contest (participating) (/problems/{problemId})
+    - [X] Users can edit their submissions (/problems/{problemId})
+- [X] Judging System: Submissions are evaluated based on predefined criteria. Admins can review and assign scores to submissions.
+    - [x] Admins can view all submissions for a problem statement (/admin/problems/{problemId}/submissions)
+    - [x] Admins can view a specific submission (/admin/problems/{problemId}/submissions/{username})
+    - [x] Admins can assign a score to a submission (/admin/problems/{problemId}/submissions/{username})
 - [x] Leaderboard: The platform maintains a real-time leaderboard that ranks participants based on their scores.
     - [x] Leaderboard is updated in real-time
     - [x] Leaderboard is sorted by score
@@ -47,7 +47,7 @@
     - [x] Users can view their submission history for a contest (participating) (/contests/{contestId}/submissions/history)
     - [x] Users can view their overall submission history (all contests) (/submissions/history)
     - [x] Users can view all their active submissions (participating) (/submissions)
-    - [ ] Users can view a specific submission (with a score) (/submissions/{submissionId})
+    - [ ] Users can view a specific submission (with a score) (/problems/{problemId})
     - [x] Users can view their score for a contest (/contests/{contestId}/score)
-    - [ ] Admins can view a user's submission history for a contest (/admin/users/{username}/contests/{contestId}/submissions/history)
-    - [ ] Admins can view a user's overall submission history (/admin/users/{username}/submissions/history)
+    - [x] Admins can view a user's submission history for a contest (/admin/users/{username}/contests/{contestId}/submissions/history)
+    - [x] Admins can view a user's overall submission history (/admin/users/{username}/submissions)
