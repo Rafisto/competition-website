@@ -14,10 +14,13 @@ import org.contesthub.apiserver.databaseInterface.repositories.ContestGradingRep
 import org.contesthub.apiserver.databaseInterface.repositories.ContestRepository;
 import org.contesthub.apiserver.databaseInterface.repositories.GroupRepository;
 import org.contesthub.apiserver.databaseInterface.repositories.UserRepository;
+import org.contesthub.apiserver.models.response.ContestResponse;
 import org.contesthub.apiserver.services.ContestService;
 import org.contesthub.apiserver.services.UserDetailsImpl;
 import org.contesthub.apiserver.services.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -58,16 +61,19 @@ public class ContestController {
     @Operation(summary = "Get contests", description = "Get contests in which the user can participate")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "All contests available to user", content = {
-                    @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = ContestResponse.class))
             })
     })
     @GetMapping("list")
-    public ResponseEntity<?> getContests(@Parameter(description = "Whether to list contests the user has joined or not") @RequestParam(defaultValue = "true") Boolean joined) {
+    public ResponseEntity<?> getContests(Principal principal,
+                                         @Parameter(description = "Whether to list contests the user has joined or not") @RequestParam(defaultValue = "true") Boolean joined) {
+        UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);
         List<Contest> contests = contestRepository.findByIsPublishedTrue();
         // Maybe introduce a new DTO for this instead of using generic ContestDto?
         // Mainly due to Schema containing non-existent fields now
-        List<ContestDto> contestResponse = contests.stream().map(contest -> new ContestDto(
-                contest.getId(), contest.getTitle(), contest.getDescription(), contest.getIsPublished()
+        List<ContestResponse> contestResponse = contests.stream().map(contest -> new ContestResponse(
+                new ContestDto(contest),
+                contest.getIsPublished() && contest.getGroups().stream().anyMatch(group -> group.getUsers().contains(userDetails.getUser()))
         )).toList();
         return ResponseEntity.ok(contestResponse);
     }
@@ -111,18 +117,9 @@ public class ContestController {
     @GetMapping("{contestId}/leaderboard")
     public ResponseEntity<?> getContestLeaderboard(Principal principal,
                                                    @Parameter(description = "Id of a contest for which the leaderboard will be returned") @PathVariable Integer contestId) {
-        JwtAuthenticationToken token = (JwtAuthenticationToken) principal;
-        UserDetailsImpl user = userDetailsService.loadUserByToken(token);
-        // Not assigning to a variable as it's only needed for validation
-        contestRepository.findByIdAndUsersContainsAndIsPublishedTrue(contestId, user.getUser())
-                .orElseThrow(() -> new EntityNotFoundException("Contest not found"));
-        Object[][] leaderboardMatrix = contestGradingRepository.getLeaderboardByContestId(contestId);
-        // Maybe into a function as it's used in BasicController.getLeaderboard() too?
-        Set<LeaderboardDto> leaderboard = new LinkedHashSet<>();
-        for(Object[] row : leaderboardMatrix) {
-            leaderboard.add(new LeaderboardDto((String) row[0], Math.toIntExact((Long) row[1])));
-        }
-        return ResponseEntity.ok(leaderboard);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Location", "/leaderboard/" + contestId);
+        return new ResponseEntity<String>(headers, HttpStatus.FOUND);
     }
 
     /***
@@ -135,7 +132,7 @@ public class ContestController {
             @ApiResponse(responseCode = "200", description = "Contest object with updated user list", content = {
                     @Content(mediaType = "application/json", schema = @Schema(implementation = ContestDto.class))
             }),
-            @ApiResponse(responseCode = "404", description = "Contest not ofund")
+            @ApiResponse(responseCode = "404", description = "Contest not found")
     })
     @PostMapping("{contestId}/join")
     public ResponseEntity<?> joinContest(Principal principal,
@@ -145,7 +142,7 @@ public class ContestController {
         // TODO - Joining a contest should require permission
         Contest contest = contestService.loadContestsUserCanJoin(user).stream()
                 .filter(contestDto -> contestDto.getId().equals(contestId)).findFirst()
-                .orElseThrow(() -> new EntityNotFoundException("Contest not found, maybe you're not a participant yet?"));
+                .orElseThrow(() -> new EntityNotFoundException("Contest not found, maybe you don't have permission to join it?"));
         // Don't throw as it will never be empty - loadUserByToken() will populate db if needed
         contest.getUsers().add(userRepository.findByUsername(user.getUsername()).orElseThrow(null));
         contestRepository.save(contest);

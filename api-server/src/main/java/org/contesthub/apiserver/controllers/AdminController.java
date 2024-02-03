@@ -19,6 +19,7 @@ import org.contesthub.apiserver.services.ContestService;
 import org.contesthub.apiserver.services.GroupService;
 import org.contesthub.apiserver.services.UserDetailsImpl;
 import org.contesthub.apiserver.services.UserDetailsServiceImpl;
+import org.hibernate.JDBCException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.parsing.Problem;
 import org.springframework.data.jpa.repository.Modifying;
@@ -89,8 +90,8 @@ public class AdminController {
 
         Contest contest = new Contest(request.getTitle(), request.getDescription(), request.getPublished(), groupObjectSet);
         contestRepository.saveAndFlush(contest);
-        ContestDto newContest = new ContestDto(contestRepository.findByTitle(contest.getTitle()));
-        return ResponseEntity.ok(newContest);
+        // TODO: Refreshing is pointless - clear refreshing calls from the code
+        return ResponseEntity.ok(new ContestDto(contest));
     }
 
     /***
@@ -152,7 +153,7 @@ public class AdminController {
                 }),
         @ApiResponse(responseCode = "404", description = "Contest not found")
     })
-    @PostMapping("contest/{contestId}/publish")
+    @PostMapping(value = "contest/{contestId}/publish", consumes = MediaType.ALL_VALUE)
     @Transactional
     @Modifying
     public ResponseEntity<?> publishContest(@Parameter(description = "Id of the contest to be updated") @PathVariable Integer contestId,
@@ -238,8 +239,9 @@ public class AdminController {
         if (contestProblems.isEmpty()) {
             // Maybe check for contest existence first?
             // It will slow down the request though
-            return ResponseEntity.badRequest().body("No problems found for contest with id " + contestId);
+            throw new EntityNotFoundException("No problems found for contest with id " + contestId);
         }
+        contestProblems.forEach(contestProblem -> contestProblem.setContestGradings(null));
         return ResponseEntity.ok(contestProblems);
     }
 
@@ -270,7 +272,7 @@ public class AdminController {
         };
         ContestProblem contestProblem = new ContestProblem(request.getTitle(), request.getContents(), request.getUseAutograding(), request.getUseAutogradingAnswer(), request.getDeadline(), contest);
         contestProblemRepository.saveAndFlush(contestProblem);
-        return ResponseEntity.ok(contestProblem);
+        return ResponseEntity.ok(new ContestProblemDto(contestProblem));
     }
 
     /***
@@ -329,7 +331,7 @@ public class AdminController {
             contestProblem.setContents(request.getContents());
         }
         if (request.getUseAutograding() == Boolean.TRUE){
-            if (request.getUseAutogradingAnswer() == null) {
+            if (!request.checkAutograding()) {
                 throw new IllegalArgumentException("Autograding answer cannot be null or empty");
             } else {
                 contestProblem.setUseAutograding(request.getUseAutograding());
@@ -348,7 +350,7 @@ public class AdminController {
         }
         contestProblemRepository.saveAndFlush(contestProblem);
 
-        return ResponseEntity.ok(contestProblem);
+        return ResponseEntity.ok(new ContestProblemDto(contestProblem));
     }
 
     /***
@@ -430,7 +432,7 @@ public class AdminController {
         group.setContests(contestService.loadContestsFromIdList(request.getContests()));
         group.setUsers(userService.loadUsersFromIdList(request.getUsers()));
         Group newGroup = groupRepository.saveAndFlush(group);
-        return ResponseEntity.ok(newGroup);
+        return ResponseEntity.ok(new GroupDto(newGroup));
     }
 
     @Operation(summary="Get all users in a group")
@@ -486,18 +488,18 @@ public class AdminController {
                     }),
             @ApiResponse(responseCode="404", description="Indicates that the group or user does not exist", content ={@Content()})
     })
-    @PostMapping(value = "groups/{groupId}/users/remove", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @DeleteMapping(value = "groups/{groupId}/users/{userId}", consumes = MediaType.ALL_VALUE)
     @Transactional
     @Modifying
     public ResponseEntity<?> removeUserFromGroup(@Parameter(description = "Id of a group to which user will be removed") @PathVariable Integer groupId,
-                                                 @Parameter(description = "Username of the user that will be removed from the group") @RequestParam String username) {
+                                                 @Parameter(description = "Id of a user to be removed") @PathVariable Integer userId) {
         Group group = groupRepository.findById(groupId).orElseThrow(() ->
                 new EntityNotFoundException("Could not find group with id " + groupId));
 
-        UserDetailsImpl user = userService.loadUserByUsername(username);
-        Boolean response = group.getUsers().remove(user.getUser());
+        User user = userRepository.getReferenceById(userId);
+        Boolean response = group.getUsers().remove(user);
         if (!response.equals(Boolean.TRUE)) {
-            throw new EntityNotFoundException("Could not find user with username " + username + " in group with id " + groupId);
+            throw new EntityNotFoundException("Could not find user with Id " + userId + " in group with id " + groupId);
         } else {
             groupRepository.saveAndFlush(group);
             return ResponseEntity.ok(group.getUsers().stream().map(UserDto::new).toList());
@@ -550,28 +552,13 @@ public class AdminController {
         if (request.getUsers() != null) {
             group.setUsers(userService.loadUsersFromIdList(request.getUsers()));
         }
-        groupRepository.saveAndFlush(group);
-        return ResponseEntity.ok(new GroupDto(group));
-    }
-
-    @Operation(summary="Get all submissions for a problem")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode="200", description="List of submissions for a problem", content =
-                    {
-                            @Content(mediaType = "application/json", schema = @Schema(implementation = ContestGradingDto.class))
-                    }),
-            @ApiResponse(responseCode="404", description="Indicates that the problem does not exist", content ={@Content()})
-    })
-    @GetMapping(value = "problems/{problemId}/submissions", consumes = MediaType.ALL_VALUE)
-    @Transactional
-    public ResponseEntity<?> getProblemSubmissions(@Parameter(description = "Id of a problem to inspect") @PathVariable Integer problemId) {
-        Set<ContestGradingDto> submissions = contestGradingRepository.findByProblem(contestProblemRepository.findById(problemId)
-                .orElseThrow(() -> new EntityNotFoundException("Could not find contest problem with id " + problemId)))
-                .stream().map(ContestGradingDto::new).collect(Collectors.toSet());
-        if (submissions.isEmpty()) {
-            throw new EntityNotFoundException("No submissions found for problem with id " + problemId);
+        try {
+            groupRepository.saveAndFlush(group);
+        } catch (JDBCException e) {
+            // This might be caused by other exceptions
+            throw new IllegalArgumentException("Group name has to be unique");
         }
-        return ResponseEntity.ok(submissions);
+        return ResponseEntity.ok(new GroupDto(group));
     }
 
     @Operation(summary="Get all submissions for a user")
@@ -602,7 +589,7 @@ public class AdminController {
                     }),
             @ApiResponse(responseCode="404", description="Indicates that the user or contest does not exist or there are no submissions", content ={@Content()})
     })
-    @GetMapping(value = "user/{username}/contests/{contestId}/submissions", consumes = MediaType.ALL_VALUE)
+    @GetMapping(value = "users/{username}/contests/{contestId}/submissions", consumes = MediaType.ALL_VALUE)
     @Transactional
     public ResponseEntity<?> getUsersSubmissionInContest(@Parameter(description = "Username of user to inspect") @PathVariable String username,
                                                          @Parameter(description = "Id of contest to inspect") @PathVariable Integer contestId) {
@@ -626,14 +613,17 @@ public class AdminController {
     @GetMapping(value = "problems/{problemId}/submissions", consumes = MediaType.ALL_VALUE)
     @Transactional
     public ResponseEntity<?> getSubmissionsInProblem(@Parameter(description = "Id of problem to inspect") @PathVariable Integer problemId) {
+        // Possibly add problem to response?
         Set<ContestGradingDto> submissions = contestGradingRepository.findByProblem_Id(problemId)
                 .stream().map(ContestGradingDto::new).collect(Collectors.toSet());
         if (submissions.isEmpty()) {
             throw new EntityNotFoundException("No submissions found for problem with id " + problemId);
         }
+        submissions.forEach(submission -> submission.setProblem(null));
         return ResponseEntity.ok(submissions);
     }
 
+    // TODO check file upload and file resolving
     @Operation(summary="Get a specific submission")
     @ApiResponses(value = {
             @ApiResponse(responseCode="200", description="The requested submission object", content =

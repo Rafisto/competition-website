@@ -33,7 +33,7 @@ public class ContestProblemRequest {
 
     @AssertTrue
     public boolean checkAutograding() {
-        return !useAutograding || useAutogradingAnswer != null;
+        return !useAutograding || (useAutogradingAnswer != null && !useAutogradingAnswer.isEmpty());
     }
 
     @NotNull
@@ -49,7 +49,7 @@ public class ContestProblemRequest {
             return false;
         }
         if (deadline == null || !checkDeadline()){
-            return false;
+            throw new IllegalArgumentException("Deadline cannot be in the past");
         }
         if (title == null || title.length() < 3){
             return false;

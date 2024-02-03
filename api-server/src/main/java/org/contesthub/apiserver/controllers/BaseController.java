@@ -25,10 +25,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.security.Principal;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @RestController
 public class BaseController {
@@ -76,7 +73,8 @@ public class BaseController {
      *                  If not provided, the leaderboard for all contests is returned
      * @return Generated leaderboard
      */
-    @Operation(summary = "Get leaderboard", description = "Get leaderboard for a specific contest or for all contests")
+    @Operation(summary = "Get leaderboard", description = """
+    Get leaderboard for a specific contest or for all contests.""")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Leaderboard ordered by score", content = {
                 @Content(mediaType = "application/json", schema = @Schema(implementation = LeaderboardDto.class))
@@ -125,23 +123,33 @@ public class BaseController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User's submissions", content = {
                     @Content(mediaType = "application/json", schema = @Schema(implementation = ContestGradingDto.class))
-            })
+            }),
+            @ApiResponse(responseCode = "404", description = "Indicates no known history for user or unknown user", content = {@Content()})
     })
     @GetMapping("/submissions/history")
     public ResponseEntity<?> getSubmissionHistory(Principal principal) {
         UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);
-        return ResponseEntity.ok(contestGradingRepository.findByUser(userDetails.getUser()).stream().map(ContestGradingDto::new));
+        List<ContestGradingDto> submissions = contestGradingRepository.findByUser(userDetails.getUser()).stream().map(ContestGradingDto::new).toList();
+        if (submissions.isEmpty()){
+            throw new EntityNotFoundException("Could not find any submissions for user " + userDetails.getUser().getUsername());
+        }
+        return ResponseEntity.ok(submissions);
     }
 
     @Operation(summary = "Get user's active submissions", description = "Get user's submissions for all problems that are still open")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "User's active submissions", content = {
                     @Content(mediaType = "application/json", schema = @Schema(implementation = ContestGradingDto.class))
-            })
+            }),
+            @ApiResponse(responseCode = "404", description = "Indicates no known active submissions for user or unknown user", content = {@Content()})
     })
     @GetMapping("/submissions")
     public ResponseEntity<?> getActiveSubmissions(Principal principal) {
         UserDetailsImpl userDetails = userDetailsService.loadUserByToken((JwtAuthenticationToken) principal);
-        return ResponseEntity.ok(contestGradingRepository.findByUserAndProblem_DeadlineAfter(userDetails.getUser(), java.time.Instant.now()).stream().map(ContestGradingDto::new));
+        List<ContestGradingDto> submissions = contestGradingRepository.findByUserAndProblem_DeadlineAfter(userDetails.getUser(), java.time.Instant.now()).stream().map(ContestGradingDto::new).toList();
+        if (submissions.isEmpty()){
+            throw new EntityNotFoundException("Could not find any active submissions for user " + userDetails.getUser().getUsername());
+        }
+        return ResponseEntity.ok(submissions);
     }
 }

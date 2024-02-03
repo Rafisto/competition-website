@@ -1,6 +1,7 @@
 package org.contesthub.apiserver.models.requests;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
 
 /***
@@ -12,6 +13,8 @@ public class ContestRequest {
     @Length(min=3)
     private String title;
 
+    @NotNull
+    @Length(min=3)
     private String description;
 
     private Boolean isPublished;
@@ -54,6 +57,6 @@ public class ContestRequest {
         if (isPublished == null) {
             this.isPublished = Boolean.FALSE;
         }
-        return title != null && title.length() >= 3;
+        return (title != null && title.length() >= 3) && (description != null && description.length() >= 3);
     }
 }
